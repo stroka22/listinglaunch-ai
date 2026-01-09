@@ -1,0 +1,91 @@
+import { NextResponse } from "next/server";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { generateListingPacketPdf } from "@/lib/pdf";
+import type { Listing } from "@/lib/types";
+
+interface RouteContext {
+  params: { id: string };
+}
+
+export async function GET(_request: Request, context: RouteContext) {
+  const id = context.params.id;
+
+  try {
+    const supabase = getSupabaseServerClient();
+
+    const { data, error } = await supabase
+      .from("listings")
+      .select(
+        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers",
+      )
+      .eq("id", id)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json(
+        { error: error?.message || "Listing not found" },
+        { status: 404 },
+      );
+    }
+
+    const row = data as any;
+
+    const listing: Listing = {
+      id: row.id,
+      agentId: row.agent_id,
+      slug: row.slug,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      street: row.street,
+      city: row.city,
+      state: row.state,
+      postalCode: row.postal_code,
+      status: row.status,
+      smsKeyword: row.sms_keyword,
+      smsPhoneNumber: row.sms_phone_number,
+      estatedRaw: row.estated_raw,
+      property: row.property,
+      branding: row.branding,
+      aiContent: row.ai_content,
+      wizardAnswers: row.wizard_answers,
+    };
+
+    const agent =
+      listing.branding?.agent ??
+      ({
+        id: listing.agentId,
+        userId: listing.agentId,
+        name: "Listing agent",
+        brokerage: "",
+        phone: "",
+        email: "",
+        headshotUrl: null,
+        logoUrl: null,
+        primaryColor: null,
+        secondaryColor: null,
+      } as any);
+
+    const mortgagePartner = listing.branding?.mortgagePartner ?? null;
+
+    const pdfBuffer = await generateListingPacketPdf({
+      listing,
+      aiContent: listing.aiContent ?? null,
+      agent,
+      mortgagePartner,
+    });
+
+    return new NextResponse(pdfBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": "inline; filename=listing-packet.pdf",
+      },
+    });
+  } catch (err: any) {
+    console.error("Packet PDF generation failed", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to generate listing packet PDF" },
+      { status: 500 },
+    );
+  }
+}

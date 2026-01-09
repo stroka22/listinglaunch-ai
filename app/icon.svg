@@ -1,0 +1,49 @@
+<svg
+  width="64"
+  height="64"
+  viewBox="0 0 64 64"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">ListingLaunchAI icon</title>
+  <desc id="desc">Icon-only mark based on the ListingLaunchAI logo</desc>
+
+  <!-- Deep navy container -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#081F33" />
+
+  <!-- Document card -->
+  <rect x="15" y="15" width="24" height="30" rx="3" fill="#FFFFFF" fill-opacity="0.98" />
+  <rect x="18" y="19" width="16" height="2" rx="1" fill="#C6CED8" />
+  <rect x="18" y="24" width="12" height="2" rx="1" fill="#C6CED8" />
+  <rect x="18" y="29" width="10" height="2" rx="1" fill="#C6CED8" />
+
+  <!-- Bar chart base (matches logo feel) -->
+  <rect x="30" y="33" width="3" height="10" rx="1.2" fill="#23364A" />
+  <rect x="35" y="30" width="3" height="13" rx="1.2" fill="#23364A" />
+
+  <!-- Teal check and arrow sweep -->
+  <path
+    d="M18 38l4 4 6-8"
+    fill="none"
+    stroke="#2E7F7A"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="M24 40c4 4 9.5 7.5 16 9.5"
+    fill="none"
+    stroke="#2E7F7A"
+    stroke-width="2.2"
+    stroke-linecap="round"
+  />
+  <path
+    d="M40 49l4-7"
+    fill="none"
+    stroke="#2E7F7A"
+    stroke-width="2.2"
+    stroke-linecap="round"
+  />
+</svg>

@@ -44,7 +44,7 @@ function collectMissingOrLowConfidenceFields(listing: Listing) {
   return out;
 }
 
-async function renderPdf(build: (doc: PDFDocument) => void): Promise<Buffer> {
+async function renderPdf(build: (doc: any) => void): Promise<Buffer> {
   const doc = new PDFDocument({ margin: 40 });
   const chunks: Buffer[] = [];
 

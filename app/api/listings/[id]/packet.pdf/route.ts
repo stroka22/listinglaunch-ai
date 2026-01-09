@@ -1,14 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { generateListingPacketPdf } from "@/lib/pdf";
 import type { Listing } from "@/lib/types";
 
-interface RouteContext {
-  params: { id: string };
-}
-
-export async function GET(_request: Request, context: RouteContext) {
-  const id = context.params.id;
+export async function GET(_request: NextRequest, context: any) {
+  const id = context?.params?.id ?? (await context?.params)?.id;
 
   try {
     const supabase = getSupabaseServerClient();
@@ -74,7 +70,7 @@ export async function GET(_request: Request, context: RouteContext) {
       mortgagePartner,
     });
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as any, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

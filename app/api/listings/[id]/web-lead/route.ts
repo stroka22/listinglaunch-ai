@@ -1,12 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-interface RouteContext {
-  params: { id: string };
-}
-
-export async function POST(request: Request, context: RouteContext) {
-  const id = context.params.id;
+export async function POST(request: NextRequest, context: any) {
+  const id = context?.params?.id ?? (await context?.params)?.id;
 
   try {
     const body = (await request.json()) as {

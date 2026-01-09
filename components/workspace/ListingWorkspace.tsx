@@ -753,13 +753,16 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <select
                 value={disclosures.metadata.occupancyStatus ?? ""}
                 onChange={(e) =>
-                  setDisclosures((prev) => ({
-                    ...prev,
-                    metadata: {
-                      ...prev.metadata,
-                      occupancyStatus: (e.target.value || null) as any,
-                    },
-                  }))
+                  setDisclosures((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      metadata: {
+                        ...prev.metadata,
+                        occupancyStatus: (e.target.value || null) as any,
+                      },
+                    };
+                  })
                 }
                 className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
               >
@@ -777,13 +780,16 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <select
                 value={disclosures.metadata.hoaOrCondo ?? ""}
                 onChange={(e) =>
-                  setDisclosures((prev) => ({
-                    ...prev,
-                    metadata: {
-                      ...prev.metadata,
-                      hoaOrCondo: (e.target.value || null) as any,
-                    },
-                  }))
+                  setDisclosures((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      metadata: {
+                        ...prev.metadata,
+                        hoaOrCondo: (e.target.value || null) as any,
+                      },
+                    };
+                  })
                 }
                 className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
               >
@@ -802,13 +808,16 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <select
                 value={disclosures.metadata.sellerType ?? ""}
                 onChange={(e) =>
-                  setDisclosures((prev) => ({
-                    ...prev,
-                    metadata: {
-                      ...prev.metadata,
-                      sellerType: (e.target.value || null) as any,
-                    },
-                  }))
+                  setDisclosures((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      metadata: {
+                        ...prev.metadata,
+                        sellerType: (e.target.value || null) as any,
+                      },
+                    };
+                  })
                 }
                 className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
               >
@@ -825,7 +834,10 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             {questions.map((q) => {
               const current = disclosures.answers[q.id] ?? "";
               const set = (value: DisclosureAnswer) => {
-                setDisclosures((prev) => updateDisclosureAnswer(prev, q.id, value));
+                setDisclosures((prev) => {
+                  if (!prev) return prev;
+                  return updateDisclosureAnswer(prev, q.id, value as DisclosureAnswer);
+                });
               };
               return (
                 <div key={q.id} className="space-y-1">

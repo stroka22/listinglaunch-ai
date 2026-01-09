@@ -1,14 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { generateListingCopy, buildListingAiContent } from "@/lib/ai";
 import type { Listing } from "@/lib/types";
 
-interface RouteContext {
-  params: { slug?: string };
-}
-
-export async function POST(_request: Request, context: RouteContext) {
-  const slug = context.params.slug;
+export async function POST(_request: NextRequest, context: any) {
+  const slug = context?.params?.slug ?? (await context?.params)?.slug;
 
   if (!slug) {
     return NextResponse.json(

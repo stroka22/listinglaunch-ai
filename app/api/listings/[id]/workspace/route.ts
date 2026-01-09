@@ -1,11 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-interface RouteContext {
-  params: { id?: string };
-}
-
-export async function GET(request: Request, _context: RouteContext) {
+export async function GET(request: NextRequest, _context: any) {
   const url = new URL(request.url);
   const segments = url.pathname.split("/").filter(Boolean);
   // Expected: ["api", "listings", "<id>", "workspace"]

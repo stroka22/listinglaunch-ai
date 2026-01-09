@@ -1,19 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { generateListingCopy, buildListingAiContent } from "@/lib/ai";
 import type { Listing } from "@/lib/types";
 
-interface RouteContext {
-  params: { id?: string };
-}
-
-export async function POST(request: Request, context: RouteContext) {
+export async function POST(request: NextRequest, context: any) {
   // Prefer path parsing to be robust to params issues
   const url = new URL(request.url);
   const segments = url.pathname.split("/").filter(Boolean);
   // Expected: ["api", "listings", "<id>", "generate-ai"]
   const idFromPath = segments[2];
-  const id = idFromPath ?? context.params.id;
+  const idCandidateFromContext =
+    context?.params?.id ?? (await context?.params)?.id ?? null;
+  const id = idFromPath ?? idCandidateFromContext;
 
   if (
     !id ||

@@ -39,7 +39,7 @@ export default function RootLayout({
       >
         <div className="min-h-screen flex flex-col">
           <header className="border-b border-zinc-200 bg-white px-6 py-2 flex items-center justify-between">
-            <Link href="/marketing" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <span className="sr-only">ListingLaunchAI marketing site</span>
               <Image
                 src="/listinglaunchai-logo-nav.svg"

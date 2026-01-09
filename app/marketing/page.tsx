@@ -21,7 +21,7 @@ export default function MarketingPage() {
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link
-                href="/"
+                href="/app"
                 className="rounded-full bg-[#2E7F7A] px-5 py-2 text-xs font-medium text-white hover:bg-[#256963]"
               >
                 Start a New Listing

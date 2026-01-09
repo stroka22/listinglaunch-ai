@@ -127,8 +127,8 @@ export function AuthScreen() {
                   ? "Signing in..."
                   : "Creating account..."
                 : mode === "sign_in"
-                  ? "Sign in with Supabase"
-                  : "Create Supabase user"}
+                  ? "Sign in to ListingLaunchAI"
+                  : "Create ListingLaunchAI account"}
             </button>
 
             <p className="text-[11px] text-zinc-500">

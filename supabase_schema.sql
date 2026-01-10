@@ -108,7 +108,8 @@ create table if not exists public.credit_packages (
   credits integer not null check (credits > 0),
   price_cents integer not null check (price_cents > 0),
   active boolean not null default true,
-  sort_order integer not null default 0
+  sort_order integer not null default 0,
+  stripe_price_id text
 );
 
 -- Credit purchase orders (Stripe integration to be wired later)

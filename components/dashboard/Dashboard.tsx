@@ -145,7 +145,7 @@ export function Dashboard({ session }: DashboardProps) {
               supabase
                 .from("credit_packages")
                 .select(
-                  "id, slug, name, credits, price_cents, active, sort_order",
+                  "id, slug, name, credits, price_cents, active, sort_order, stripe_price_id",
                 )
                 .eq("active", true)
                 .order("sort_order", { ascending: true }),
@@ -200,6 +200,7 @@ export function Dashboard({ session }: DashboardProps) {
                 priceCents: row.price_cents as number,
                 active: row.active as boolean,
                 sortOrder: row.sort_order as number,
+                stripePriceId: (row.stripe_price_id as string | null) ?? null,
               }),
             );
             setCreditPackages(pkgs);
@@ -316,13 +317,21 @@ export function Dashboard({ session }: DashboardProps) {
             open an existing listing to view assets and leads.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="/app/profile"
+            className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+          >
+            Profile & branding
+          </a>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -634,14 +643,13 @@ export function Dashboard({ session }: DashboardProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-semibold text-zinc-800">
-                Credit packages (test)
+                Credit packages
               </h4>
             </div>
             {creditPackages.length === 0 ? (
               <p className="text-[11px] text-zinc-500">
-                No credit packages are configured yet. You can seed
-                credit_packages in the database, or use direct ledger inserts
-                for internal testing.
+                No credit packages are configured yet. Configure rows in
+                credit_packages to enable credit purchases.
               </p>
             ) : (
               <div className="space-y-2">
@@ -664,14 +672,70 @@ export function Dashboard({ session }: DashboardProps) {
                             ${perListing} per listing
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          disabled={purchaseLoading}
-                          onClick={() => handleTestPurchase(pkg)}
-                          className="rounded-full bg-black px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
-                        >
-                          Add credits (test)
-                        </button>
+                        {pkg.stripePriceId ? (
+                          <button
+                            type="button"
+                            disabled={purchaseLoading}
+                            onClick={async () => {
+                              setBillingError(null);
+                              setPurchaseLoading(true);
+                              try {
+                                const res = await fetch(
+                                  "/api/billing/create-checkout-session",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      packageId: pkg.id,
+                                      agentId: session.user.id,
+                                    }),
+                                  },
+                                );
+
+                                if (!res.ok) {
+                                  const json = await res
+                                    .json()
+                                    .catch(() => null);
+                                  throw new Error(
+                                    json?.error || "Checkout failed",
+                                  );
+                                }
+
+                                const json = (await res.json()) as {
+                                  url?: string;
+                                };
+                                if (json.url) {
+                                  window.location.href = json.url;
+                                } else {
+                                  throw new Error(
+                                    "Stripe did not return a checkout URL.",
+                                  );
+                                }
+                              } catch (err: any) {
+                                setBillingError(
+                                  err?.message ||
+                                    "Could not start checkout. Please try again.",
+                                );
+                              } finally {
+                                setPurchaseLoading(false);
+                              }
+                            }}
+                            className="rounded-full bg-black px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
+                          >
+                            Buy credits
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={purchaseLoading}
+                            onClick={() => handleTestPurchase(pkg)}
+                            className="rounded-full bg-black px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
+                          >
+                            Add credits (test)
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

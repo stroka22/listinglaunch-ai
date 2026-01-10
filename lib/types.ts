@@ -127,6 +127,7 @@ export interface CreditPackage {
   priceCents: number;
   active: boolean;
   sortOrder: number;
+  stripePriceId?: string | null;
 }
 
 export interface CreditOrder {

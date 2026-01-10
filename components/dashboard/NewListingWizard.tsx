@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type {
   AgentProfile,
@@ -112,6 +112,50 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
   const [aiStatus, setAiStatus] = useState<
     "idle" | "pending" | "done" | "error"
   >("idle");
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+
+    async function loadAgentProfile() {
+      try {
+        const { data, error } = await supabase
+          .from("agent_profiles")
+          .select(
+            "name, brokerage, phone, email, headshot_url, logo_url, primary_color, secondary_color",
+          )
+          .eq("id", agentId)
+          .single();
+
+        if (error && error.code !== "PGRST116") {
+          return;
+        }
+
+        if (data) {
+          setAgentBranding((prev) => ({
+            ...prev,
+            id: agentId,
+            userId: agentId,
+            name: (data.name as string | null) ?? prev.name,
+            brokerage: (data.brokerage as string | null) ?? prev.brokerage,
+            phone: (data.phone as string | null) ?? prev.phone,
+            email:
+              (data.email as string | null) ?? prev.email ?? "",
+            headshotUrl:
+              (data.headshot_url as string | null) ?? prev.headshotUrl,
+            logoUrl: (data.logo_url as string | null) ?? prev.logoUrl,
+            primaryColor:
+              (data.primary_color as string | null) ?? prev.primaryColor,
+            secondaryColor:
+              (data.secondary_color as string | null) ?? prev.secondaryColor,
+          }));
+        }
+      } catch {
+        // Non-fatal for the wizard
+      }
+    }
+
+    loadAgentProfile();
+  }, [agentId]);
 
   function ensureProperty() {
     if (property) return property;

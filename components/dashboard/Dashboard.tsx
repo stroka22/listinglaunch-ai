@@ -41,6 +41,9 @@ export function Dashboard({ session }: DashboardProps) {
   const [creditPackages, setCreditPackages] = useState<CreditPackage[]>([]);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [selectedAssetsListingId, setSelectedAssetsListingId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -86,6 +89,7 @@ export function Dashboard({ session }: DashboardProps) {
         }));
 
         setListings(mapped);
+        setSelectedAssetsListingId((prev) => prev ?? mapped[0]?.id ?? null);
 
         const listingIds = mapped.map((l) => l.id);
         if (listingIds.length > 0) {
@@ -307,6 +311,17 @@ export function Dashboard({ session }: DashboardProps) {
     }
   }
 
+  function copyToClipboard(text: string) {
+    if (!text) return;
+    try {
+      navigator.clipboard?.writeText(text).catch(() => {
+        // Ignore clipboard errors in older browsers
+      });
+    } catch {
+      // No-op if clipboard is not available
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -394,6 +409,217 @@ export function Dashboard({ session }: DashboardProps) {
         agentId={session.user.id}
         onCreated={() => window.location.reload()}
       />
+
+      {listings.length > 0 && (
+        <section className="rounded-lg border border-zinc-200 bg-white p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-semibold">Listing assets</h3>
+              <p className="text-[11px] text-zinc-500">
+                Quickly grab social captions, MLS copy, and PDFs for a single
+                listing without opening the full workspace.
+              </p>
+            </div>
+            {listings.length > 1 && (
+              <select
+                value={selectedAssetsListingId ?? listings[0]?.id ?? ""}
+                onChange={(e) =>
+                  setSelectedAssetsListingId(e.target.value || null)
+                }
+                className="rounded-full border border-zinc-300 bg-white px-3 py-1 text-[11px] text-zinc-700"
+              >
+                {listings.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.street}, {l.city}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {(() => {
+            const selected =
+              listings.find((l) => l.id === selectedAssetsListingId) ||
+              listings[0];
+            if (!selected) return null;
+            const ai = selected.aiContent ?? null;
+            const addressLine = `${selected.street}, ${selected.city}, ${selected.state} ${selected.postalCode}`;
+
+            return (
+              <div className="grid gap-4 md:grid-cols-[1.5fr,1.1fr] text-xs">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <div className="text-[11px] font-semibold text-zinc-800">
+                        {addressLine}
+                      </div>
+                      <div className="text-[10px] text-zinc-500">
+                        Status: {selected.status.replace(/_/g, " ")}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {selected.id && (
+                        <a
+                          href={`/workspace/listings/${selected.id}`}
+                          className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                        >
+                          Open workspace
+                        </a>
+                      )}
+                      <a
+                        href={`/listing/${selected.slug}`}
+                        className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                      >
+                        View hub
+                      </a>
+                    </div>
+                  </div>
+
+                  {!ai && (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                      AI assets have not been generated for this listing yet.
+                      Open the workspace and click "Generate AI assets" to
+                      create social captions and MLS copy.
+                    </div>
+                  )}
+
+                  {ai && (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-[11px] font-semibold text-zinc-800">
+                            Social media captions
+                          </h4>
+                          <span className="text-[10px] text-zinc-500">
+                            Instagram / Facebook / LinkedIn
+                          </span>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-3">
+                          {[
+                            ["Instagram", ai.socialInstagram],
+                            ["Facebook", ai.socialFacebook],
+                            ["LinkedIn", ai.socialLinkedIn],
+                          ].map(([label, text]) => (
+                            <div
+                              key={label as string}
+                              className="rounded-md border border-zinc-200 bg-zinc-50 p-2 space-y-1"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-[11px] font-medium text-zinc-700">
+                                  {label}
+                                </div>
+                                {text && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      copyToClipboard(text as string)
+                                    }
+                                    className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                                  >
+                                    Copy
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-zinc-700 whitespace-pre-wrap">
+                                {(text as string) || "Not generated"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-[11px] font-semibold text-zinc-800">
+                            MLS remarks (standard style)
+                          </h4>
+                          {ai.mlsPublicRemarks?.standard && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                copyToClipboard(
+                                  ai.mlsPublicRemarks.standard as string,
+                                )
+                              }
+                              className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                            >
+                              Copy
+                            </button>
+                          )}
+                        </div>
+                        <p className="rounded-md border border-zinc-200 bg-zinc-50 p-2 text-[11px] text-zinc-700 whitespace-pre-wrap">
+                          {ai.mlsPublicRemarks?.standard ||
+                            "Not generated. Use Generate AI assets in the workspace."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-semibold text-zinc-800">
+                      PDFs & print assets
+                    </h4>
+                    <p className="text-[10px] text-zinc-500">
+                      Download MLS packet and open house flyers for this
+                      listing.
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      <a
+                        href={`/api/listings/${selected.id}/packet.pdf`}
+                        className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                      >
+                        MLS packet PDF
+                      </a>
+                      <a
+                        href={`/api/listings/${selected.id}/flyer.pdf?co=0`}
+                        className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                      >
+                        Flyer (agent only)
+                      </a>
+                      <a
+                        href={`/api/listings/${selected.id}/flyer.pdf?co=1`}
+                        className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                      >
+                        Co-branded flyer
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-semibold text-zinc-800">
+                      Lead capture
+                    </h4>
+                    <p className="text-[10px] text-zinc-500">
+                      Share this public hub link on your sign riders, email,
+                      or social posts to capture leads.
+                    </p>
+                    <div className="rounded-md border border-zinc-200 bg-zinc-50 p-2 text-[11px] text-zinc-700">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="truncate text-[11px]">
+                          {`${window.location.origin}/listing/${selected.slug}`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            copyToClipboard(
+                              `${window.location.origin}/listing/${selected.slug}`,
+                            )
+                          }
+                          className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                        >
+                          Copy link
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </section>
+      )}
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">

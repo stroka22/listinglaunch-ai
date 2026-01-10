@@ -4,6 +4,7 @@ import { generateOpenHouseFlyerPdf } from "@/lib/pdf";
 import type { Listing } from "@/lib/types";
 
 export async function GET(request: NextRequest, context: any) {
+  const url = new URL(request.url);
   const id = context?.params?.id ?? (await context?.params)?.id;
 
   try {
@@ -63,14 +64,17 @@ export async function GET(request: NextRequest, context: any) {
 
     const mortgagePartner = listing.branding?.mortgagePartner ?? null;
 
-    const url = new URL(request.url);
     const hubUrl = `${url.origin}/listing/${listing.slug}`;
+
+    const includeMortgageParam = url.searchParams.get("co");
+    const includeMortgagePartner =
+      includeMortgageParam === null ? true : includeMortgageParam === "1";
 
     const pdfBuffer = await generateOpenHouseFlyerPdf({
       listing,
       aiContent: listing.aiContent ?? null,
       agent,
-      mortgagePartner,
+      mortgagePartner: includeMortgagePartner ? mortgagePartner : null,
       openHouseDateTime: null,
       qrCodeUrl: hubUrl,
       smsKeyword: listing.smsKeyword,

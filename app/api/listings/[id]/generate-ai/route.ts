@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, context: any) {
     const { data, error } = await supabase
       .from("listings")
       .select(
-        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, wizard_answers, ai_content",
+        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, credit_consumed, estated_raw, property, branding, wizard_answers, ai_content",
       )
       .eq("id", id)
       .single();
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest, context: any) {
       status: row.status,
       smsKeyword: row.sms_keyword,
       smsPhoneNumber: row.sms_phone_number,
+      creditConsumed: row.credit_consumed,
       estatedRaw: row.estated_raw,
       property: row.property,
       branding: row.branding,
@@ -119,9 +120,62 @@ export async function POST(request: NextRequest, context: any) {
 
     const aiContent = buildListingAiContent(listing.id, payload);
 
+    const creditAlreadyConsumed = !!row.credit_consumed;
+
+    if (!creditAlreadyConsumed) {
+      const { data: ledgerRows, error: ledgerError } = await supabase
+        .from("agent_credit_ledger")
+        .select("delta")
+        .eq("agent_id", listing.agentId);
+
+      if (ledgerError) {
+        return NextResponse.json(
+          { error: ledgerError.message },
+          { status: 500 },
+        );
+      }
+
+      const balance = (ledgerRows ?? []).reduce(
+        (sum: number, row: any) => sum + (row.delta as number),
+        0,
+      );
+
+      if (balance <= 0) {
+        return NextResponse.json(
+          {
+            error: "You do not have any listing credits available.",
+            code: "NO_CREDITS",
+            balance,
+          },
+          { status: 402 },
+        );
+      }
+
+      const { error: ledgerInsertError } = await supabase
+        .from("agent_credit_ledger")
+        .insert({
+          agent_id: listing.agentId,
+          delta: -1,
+          reason: "listing_consume",
+          listing_id: listing.id,
+        });
+
+      if (ledgerInsertError) {
+        return NextResponse.json(
+          { error: ledgerInsertError.message },
+          { status: 500 },
+        );
+      }
+    }
+
+    const updatePayload: Record<string, any> = { ai_content: aiContent };
+    if (!creditAlreadyConsumed) {
+      updatePayload.credit_consumed = true;
+    }
+
     const { error: updateError } = await supabase
       .from("listings")
-      .update({ ai_content: aiContent })
+      .update(updatePayload)
       .eq("id", listing.id);
 
     if (updateError) {

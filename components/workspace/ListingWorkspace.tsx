@@ -162,6 +162,12 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
       if (!res.ok) {
         const json = await res.json().catch(() => null);
+        if (res.status === 402 && json?.code === "NO_CREDITS") {
+          throw new Error(
+            json.error ||
+              "You do not have any listing credits available. Purchase credits to generate AI assets.",
+          );
+        }
         throw new Error(json?.error || "AI generation failed");
       }
 

@@ -89,6 +89,7 @@ export interface Listing {
   status: "draft" | "ready_for_mls" | "published";
   smsKeyword: string | null;
   smsPhoneNumber: string | null;
+  creditConsumed?: boolean;
   estatedRaw: unknown | null;
   property: PropertySnapshot;
   branding?: {
@@ -97,7 +98,7 @@ export interface Listing {
   } | null;
   aiContent?: ListingAiContent | null;
   wizardAnswers?: Record<string, string> | null;
-   disclosures?: ListingDisclosures | null;
+  disclosures?: ListingDisclosures | null;
 }
 
 export interface ListingLead {
@@ -108,3 +109,33 @@ export interface ListingLead {
   source: "sms" | "web";
   optedIn: boolean;
 }
+
+export interface AgentCreditLedgerEntry {
+  id: string;
+  agentId: string;
+  delta: number;
+  reason: string;
+  listingId: string | null;
+  createdAt: string;
+}
+
+export interface CreditPackage {
+  id: string;
+  slug: string;
+  name: string;
+  credits: number;
+  priceCents: number;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface CreditOrder {
+  id: string;
+  agentId: string;
+  packageId: string;
+  credits: number;
+  priceCents: number;
+  status: "pending" | "paid" | "failed" | "refunded";
+  createdAt: string;
+}
+

@@ -7,8 +7,11 @@ type Mode = "sign_in" | "sign_up";
 
 export function AuthScreen() {
   const [mode, setMode] = useState<Mode>("sign_in");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,9 +30,19 @@ export function AuthScreen() {
         });
         if (signInError) throw signInError;
       } else {
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match. Please re-enter them.");
+        }
+
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+            },
+          },
         });
         if (signUpError) throw signUpError;
       }
@@ -85,6 +98,35 @@ export function AuthScreen() {
           </div>
 
           <form className="space-y-3" onSubmit={handleSubmit}>
+            {mode === "sign_up" && (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-zinc-700">
+                    First name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/60"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-zinc-700">
+                    Last name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/60"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1">
               <label className="block text-xs font-medium text-zinc-700">
                 Work email
@@ -110,6 +152,21 @@ export function AuthScreen() {
                 className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/60"
               />
             </div>
+
+            {mode === "sign_up" && (
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-zinc-700">
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/60"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">

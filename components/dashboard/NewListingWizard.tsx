@@ -249,6 +249,23 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
 
       const listingId = data.id as string;
 
+      // Ensure an agent profile record exists for admin reporting and defaults.
+      try {
+        await supabase.from("agent_profiles").upsert({
+          id: agentId,
+          name: brandingAgent.name,
+          brokerage: brandingAgent.brokerage,
+          phone: brandingAgent.phone,
+          email: brandingAgent.email,
+          headshot_url: brandingAgent.headshotUrl,
+          logo_url: brandingAgent.logoUrl,
+          primary_color: brandingAgent.primaryColor,
+          secondary_color: brandingAgent.secondaryColor,
+        });
+      } catch {
+        // Non-fatal; listing creation should still succeed even if profile upsert fails.
+      }
+
       setAiStatus("pending");
 
       const aiRes = await fetch(`/api/listings/${listingId}/generate-ai`, {

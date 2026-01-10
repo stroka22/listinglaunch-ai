@@ -264,13 +264,25 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
                 onChange={(e) => setHeadshotUrl(e.target.value)}
                 className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-black/60"
               />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleHeadshotUpload}
-              disabled={uploadingHeadshot}
-              className="mt-1 block w-full text-[10px] text-zinc-600"
-            />
+            <div className="mt-1 flex items-center gap-2">
+              <label
+                htmlFor="headshot-upload"
+                className="inline-flex cursor-pointer items-center rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100"
+              >
+                Choose headshot file
+              </label>
+              <span className="text-[10px] text-zinc-500">
+                JPG or PNG, used on flyers and packets.
+              </span>
+              <input
+                id="headshot-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleHeadshotUpload}
+                disabled={uploadingHeadshot}
+                className="hidden"
+              />
+            </div>
             </div>
             <div className="space-y-1">
               <label className="block text-[11px] font-medium text-zinc-700">
@@ -282,13 +294,25 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
                 onChange={(e) => setLogoUrl(e.target.value)}
                 className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-black/60"
               />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleLogoUpload}
-              disabled={uploadingLogo}
-              className="mt-1 block w-full text-[10px] text-zinc-600"
-            />
+            <div className="mt-1 flex items-center gap-2">
+              <label
+                htmlFor="logo-upload"
+                className="inline-flex cursor-pointer items-center rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100"
+              >
+                Choose logo file
+              </label>
+              <span className="text-[10px] text-zinc-500">
+                Transparent PNG recommended for best results.
+              </span>
+              <input
+                id="logo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploadingLogo}
+                className="hidden"
+              />
+            </div>
             </div>
             <div className="flex gap-4">
               <div className="space-y-1">

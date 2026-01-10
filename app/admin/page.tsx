@@ -1,7 +1,32 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 export default async function AdminPage() {
-  const supabase = getSupabaseServerClient();
+  const url = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRoleKey) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10 text-xs text-zinc-600">
+        <h1 className="mb-2 text-lg font-semibold tracking-tight text-zinc-900">
+          Admin console not configured
+        </h1>
+        <p className="mb-1">
+          The admin area requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to
+          be set in the environment. Regular agent features are unaffected.
+        </p>
+        <p>
+          Add these environment variables in your deployment (and optionally in
+          .env.local) to enable the admin console.
+        </p>
+      </div>
+    );
+  }
+
+  const supabase = createClient(url, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+    },
+  });
 
   const [{ data: agentRows }, { data: listingRows }, { data: ledgerRows }] =
     await Promise.all([

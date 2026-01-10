@@ -381,7 +381,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 Social media captions
               </h2>
               <span className="text-[10px] text-zinc-500">
-                Instagram / Facebook / LinkedIn
+                Instagram / Facebook / LinkedIn / Open house
               </span>
             </div>
 
@@ -390,6 +390,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 ["Instagram", ai.socialInstagram],
                 ["Facebook", ai.socialFacebook],
                 ["LinkedIn", ai.socialLinkedIn],
+                ["Open house", ai.socialOpenHouse],
               ].map(([label, text]) => (
                 <div
                   key={label as string}

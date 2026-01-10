@@ -58,6 +58,7 @@ export interface ListingAiContent {
   socialInstagram: string | null;
   socialFacebook: string | null;
   socialLinkedIn: string | null;
+   socialOpenHouse: string | null;
 }
 
 export type DisclosureAnswer = "yes" | "no" | "unknown";

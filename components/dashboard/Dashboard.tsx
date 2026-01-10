@@ -491,7 +491,7 @@ export function Dashboard({ session }: DashboardProps) {
                             Social media captions
                           </h4>
                           <span className="text-[10px] text-zinc-500">
-                            Instagram / Facebook / LinkedIn
+                            Instagram / Facebook / LinkedIn / Open house
                           </span>
                         </div>
                         <div className="grid gap-2 md:grid-cols-3">
@@ -499,6 +499,7 @@ export function Dashboard({ session }: DashboardProps) {
                             ["Instagram", ai.socialInstagram],
                             ["Facebook", ai.socialFacebook],
                             ["LinkedIn", ai.socialLinkedIn],
+                            ["Open house", ai.socialOpenHouse],
                           ].map(([label, text]) => (
                             <div
                               key={label as string}

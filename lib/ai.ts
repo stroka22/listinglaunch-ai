@@ -31,6 +31,7 @@ export interface GeneratedCopyPayload {
   socialInstagram: string;
   socialFacebook: string;
   socialLinkedIn: string;
+   socialOpenHouse: string;
 }
 
 function createClient() {
@@ -79,6 +80,7 @@ export async function generateListingCopy(
           JSON.stringify(ctx.agent),
           "\n\nMortgage partner (optional, for co-branded marketing only; do not mention in MLS remarks):",
           JSON.stringify(ctx.mortgagePartner),
+          "\n\nCreate one additional social caption focused on promoting an open house for this property. It should be generic enough to reuse for different dates (e.g., 'Join us for an open house at... this weekend') and avoid mentioning specific days/times.",
           "\n\nRespond with JSON only in this shape:",
           JSON.stringify({
             mlsPublicRemarks: {
@@ -93,6 +95,7 @@ export async function generateListingCopy(
             socialInstagram: "...",
             socialFacebook: "...",
             socialLinkedIn: "...",
+            socialOpenHouse: "...",
           }),
         ].join(" "),
       },
@@ -125,5 +128,6 @@ export function buildListingAiContent(
     socialInstagram: payload.socialInstagram,
     socialFacebook: payload.socialFacebook,
     socialLinkedIn: payload.socialLinkedIn,
+    socialOpenHouse: payload.socialOpenHouse,
   };
 }

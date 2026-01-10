@@ -20,6 +20,8 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingHeadshot, setUploadingHeadshot] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -109,6 +111,74 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
     }
   }
 
+  async function handleHeadshotUpload(e: any) {
+    const file: File | undefined = e.target?.files?.[0];
+    if (!file) return;
+    setUploadingHeadshot(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `agents/${session.user.id}/headshot-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("branding-assets")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("branding-assets").getPublicUrl(path);
+
+      setHeadshotUrl(publicUrl);
+      setSuccess("Headshot uploaded.");
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to upload headshot");
+    } finally {
+      setUploadingHeadshot(false);
+      if (e.target) {
+        e.target.value = "";
+      }
+    }
+  }
+
+  async function handleLogoUpload(e: any) {
+    const file: File | undefined = e.target?.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `agents/${session.user.id}/logo-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("branding-assets")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("branding-assets").getPublicUrl(path);
+
+      setLogoUrl(publicUrl);
+      setSuccess("Logo uploaded.");
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to upload logo");
+    } finally {
+      setUploadingLogo(false);
+      if (e.target) {
+        e.target.value = "";
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 text-xs text-zinc-500">
@@ -194,6 +264,13 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
                 onChange={(e) => setHeadshotUrl(e.target.value)}
                 className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-black/60"
               />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleHeadshotUpload}
+              disabled={uploadingHeadshot}
+              className="mt-1 block w-full text-[10px] text-zinc-600"
+            />
             </div>
             <div className="space-y-1">
               <label className="block text-[11px] font-medium text-zinc-700">
@@ -205,6 +282,13 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
                 onChange={(e) => setLogoUrl(e.target.value)}
                 className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-black/60"
               />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              disabled={uploadingLogo}
+              className="mt-1 block w-full text-[10px] text-zinc-600"
+            />
             </div>
             <div className="flex gap-4">
               <div className="space-y-1">

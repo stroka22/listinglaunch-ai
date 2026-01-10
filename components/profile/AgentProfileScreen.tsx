@@ -189,14 +189,22 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 space-y-4">
-      <div className="space-y-1">
-        <h1 className="text-lg font-semibold tracking-tight">
-          Profile & branding
-        </h1>
-        <p className="text-xs text-zinc-500">
-          Update your contact details and default branding. New listings will
-          use these values as starting points for the wizard and PDFs.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="space-y-1">
+          <h1 className="text-lg font-semibold tracking-tight">
+            Profile & branding
+          </h1>
+          <p className="text-xs text-zinc-500">
+            Update your contact details and default branding. New listings
+            and marketing assets will use these values as starting points.
+          </p>
+        </div>
+        <a
+          href="/app"
+          className="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+        >
+          ← Back to dashboard
+        </a>
       </div>
 
       <form

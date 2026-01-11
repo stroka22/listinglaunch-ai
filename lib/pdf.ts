@@ -1,6 +1,12 @@
-import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
-import type { AgentProfile, Listing, ListingAiContent, MortgagePartnerProfile, PropertyField } from "@/lib/types";
+import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
+import type {
+  AgentProfile,
+  Listing,
+  ListingAiContent,
+  MortgagePartnerProfile,
+  PropertyField,
+} from "@/lib/types";
 
 function fieldDisplay<T>(label: string, field: PropertyField<T>) {
   const value = field.value == null || field.value === "" ? "—" : String(field.value);
@@ -44,22 +50,32 @@ function collectMissingOrLowConfidenceFields(listing: Listing) {
   return out;
 }
 
-async function renderPdf(build: (doc: any) => void): Promise<Buffer> {
-  const doc = new PDFDocument({ margin: 40 });
-  const chunks: Buffer[] = [];
+function wrapText(
+  text: string,
+  font: PDFFont,
+  fontSize: number,
+  maxWidth: number,
+): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
 
-  return await new Promise<Buffer>((resolve, reject) => {
-    doc.on("data", (chunk) => {
-      chunks.push(chunk as Buffer);
-    });
-    doc.on("end", () => {
-      resolve(Buffer.concat(chunks));
-    });
-    doc.on("error", (err) => reject(err));
+  for (const word of words) {
+    const testLine = current ? `${current} ${word}` : word;
+    const width = font.widthOfTextAtSize(testLine, fontSize);
+    if (width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = testLine;
+    }
+  }
 
-    build(doc);
-    doc.end();
-  });
+  if (current) {
+    lines.push(current);
+  }
+
+  return lines;
 }
 
 export interface ListingPacketPdfInput {
@@ -74,107 +90,250 @@ export async function generateListingPacketPdf(
 ): Promise<Buffer> {
   const { listing, aiContent, agent, mortgagePartner } = input;
   const addressLine = `${listing.street}, ${listing.city}, ${listing.state} ${listing.postalCode}`;
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  return renderPdf((doc) => {
-    doc.fontSize(20).text("Stellar MLS Listing Packet", { align: "center" });
-    doc.moveDown();
+  const page = pdfDoc.addPage();
+  const { width, height } = page.getSize();
+  const margin = 40;
+  let y = height - margin;
 
-    doc.fontSize(12).text(`Property: ${addressLine}`);
-    doc.text(`Listing status: ${listing.status}`);
-    doc.moveDown();
+  page.drawText("Stellar MLS Listing Packet", {
+    x: margin,
+    y: y - 24,
+    size: 20,
+    font: boldFont,
+    color: rgb(0, 0, 0),
+  });
+  y -= 24 + 16;
 
-    doc.fontSize(14).text("Core Property Data", { underline: true });
-    doc.moveDown(0.5);
+  page.drawText(`Property: ${addressLine}`, {
+    x: margin,
+    y,
+    size: 12,
+    font,
+  });
+  y -= 16;
+  page.drawText(`Listing status: ${listing.status}`, {
+    x: margin,
+    y,
+    size: 12,
+    font,
+  });
+  y -= 24;
 
-    const fields = listing.property;
-    const lines = [
-      fieldDisplay("Beds", fields.beds),
-      fieldDisplay("Baths", fields.baths),
-      fieldDisplay("Square Feet", fields.squareFeet),
-      fieldDisplay("Lot Size (sq ft)", fields.lotSizeSqFt),
-      fieldDisplay("Year Built", fields.yearBuilt),
-      fieldDisplay("Property Type", fields.propertyType),
-      fieldDisplay("Parcel ID", fields.parcelId),
-      fieldDisplay("Annual Taxes", fields.annualTaxes),
-    ];
+  page.drawText("Core Property Data", {
+    x: margin,
+    y,
+    size: 14,
+    font: boldFont,
+  });
+  y -= 18;
 
-    for (const line of lines) {
-      doc.fontSize(10).text(line);
+  const fields = listing.property;
+  const lines = [
+    fieldDisplay("Beds", fields.beds),
+    fieldDisplay("Baths", fields.baths),
+    fieldDisplay("Square Feet", fields.squareFeet),
+    fieldDisplay("Lot Size (sq ft)", fields.lotSizeSqFt),
+    fieldDisplay("Year Built", fields.yearBuilt),
+    fieldDisplay("Property Type", fields.propertyType),
+    fieldDisplay("Parcel ID", fields.parcelId),
+    fieldDisplay("Annual Taxes", fields.annualTaxes),
+  ];
+
+  const maxWidth = width - margin * 2;
+  for (const line of lines) {
+    const wrapped = wrapText(line, font, 10, maxWidth);
+    for (const l of wrapped) {
+      page.drawText(l, { x: margin, y, size: 10, font });
+      y -= 14;
     }
+  }
 
-    doc.moveDown();
+  y -= 10;
 
-    const missing = collectMissingOrLowConfidenceFields(listing);
-    if (missing.length > 0) {
-      doc.fontSize(14).text("Missing or Low-Confidence Fields", { underline: true });
-      doc.moveDown(0.5);
-      missing.forEach((m) => doc.fontSize(10).text(`• ${m}`));
-      doc.moveDown();
-    }
-
-    if (aiContent) {
-      doc.addPage();
-      doc.fontSize(16).text("MLS Public Remarks", { underline: true });
-      doc.moveDown();
-
-      doc.fontSize(12).text("Standard:");
-      doc.fontSize(10).text(aiContent.mlsPublicRemarks.standard ?? "—");
-      doc.moveDown();
-
-      doc.fontSize(12).text("Lifestyle:");
-      doc.fontSize(10).text(aiContent.mlsPublicRemarks.lifestyle ?? "—");
-      doc.moveDown();
-
-      doc.fontSize(12).text("Investor:");
-      doc.fontSize(10).text(aiContent.mlsPublicRemarks.investor ?? "—");
-      doc.moveDown();
-
-      doc.addPage();
-      doc.fontSize(16).text("Feature Bullets", { underline: true });
-      doc.moveDown();
-
-      const sections: Array<[string, string[]]> = [
-        ["Interior", aiContent.featureBulletsInterior],
-        ["Exterior", aiContent.featureBulletsExterior],
-        ["Community", aiContent.featureBulletsCommunity],
-      ];
-
-      for (const [label, items] of sections) {
-        doc.fontSize(12).text(label + ":");
-        if (items.length === 0) {
-          doc.fontSize(10).text("—");
-        } else {
-          items.forEach((item) => doc.fontSize(10).text(`• ${item}`));
-        }
-        doc.moveDown();
+  const missing = collectMissingOrLowConfidenceFields(listing);
+  if (missing.length > 0) {
+    page.drawText("Missing or Low-Confidence Fields", {
+      x: margin,
+      y,
+      size: 14,
+      font: boldFont,
+    });
+    y -= 18;
+    for (const m of missing) {
+      const wrapped = wrapText(`• ${m}`, font, 10, maxWidth);
+      for (const l of wrapped) {
+        page.drawText(l, { x: margin, y, size: 10, font });
+        y -= 14;
       }
     }
+  }
 
-    doc.addPage();
-    doc.fontSize(16).text("Branding", { underline: true });
-    doc.moveDown();
+  if (aiContent) {
+    const remarksPage = pdfDoc.addPage();
+    const { width: rw, height: rh } = remarksPage.getSize();
+    let ry = rh - margin;
 
-    doc.fontSize(12).text("Agent");
-    doc.fontSize(10).text(`${agent.name} | ${agent.brokerage}`);
-    doc.fontSize(10).text(`Phone: ${agent.phone} | Email: ${agent.email}`);
-    if (agent.primaryColor) {
-      doc.fontSize(10).text(`Brand colors: ${agent.primaryColor}${agent.secondaryColor ? `, ${agent.secondaryColor}` : ""}`);
+    remarksPage.drawText("MLS Public Remarks", {
+      x: margin,
+      y: ry - 24,
+      size: 16,
+      font: boldFont,
+    });
+    ry -= 24 + 12;
+
+    const sections: Array<[string, string | null]> = [
+      ["Standard", aiContent.mlsPublicRemarks.standard ?? "—"],
+      ["Lifestyle", aiContent.mlsPublicRemarks.lifestyle ?? "—"],
+      ["Investor", aiContent.mlsPublicRemarks.investor ?? "—"],
+    ];
+
+    for (const [label, text] of sections) {
+      remarksPage.drawText(`${label}:`, {
+        x: margin,
+        y: ry,
+        size: 12,
+        font: boldFont,
+      });
+      ry -= 16;
+      const wrapped = wrapText(text || "—", font, 10, rw - margin * 2);
+      for (const l of wrapped) {
+        remarksPage.drawText(l, { x: margin, y: ry, size: 10, font });
+        ry -= 14;
+      }
+      ry -= 10;
     }
 
-    if (mortgagePartner) {
-      doc.moveDown();
-      doc.fontSize(12).text("Mortgage Partner (Marketing Only)");
-      doc.fontSize(10).text(`${mortgagePartner.name} | ${mortgagePartner.company}`);
-      doc.fontSize(10).text(`NMLS: ${mortgagePartner.nmlsId}`);
-      doc.fontSize(10).text(`Phone: ${mortgagePartner.phone} | Email: ${mortgagePartner.email}`);
-    }
+    const bulletsPage = pdfDoc.addPage();
+    const { width: bw, height: bh } = bulletsPage.getSize();
+    let by = bh - margin;
 
-    doc.moveDown(2);
-    doc.fontSize(8).text(
-      "Sources: Public record data via Estated Property API v4; agent-confirmed fields as marked; AI-generated text via OpenAI. Data is provided for MLS entry support only—do not treat as a direct MLS feed.",
-      { align: "left" },
-    );
+    bulletsPage.drawText("Feature Bullets", {
+      x: margin,
+      y: by - 24,
+      size: 16,
+      font: boldFont,
+    });
+    by -= 24 + 12;
+
+    const bulletSections: Array<[string, string[]]> = [
+      ["Interior", aiContent.featureBulletsInterior],
+      ["Exterior", aiContent.featureBulletsExterior],
+      ["Community", aiContent.featureBulletsCommunity],
+    ];
+
+    for (const [label, items] of bulletSections) {
+      bulletsPage.drawText(`${label}:`, {
+        x: margin,
+        y: by,
+        size: 12,
+        font: boldFont,
+      });
+      by -= 16;
+
+      if (items.length === 0) {
+        bulletsPage.drawText("—", {
+          x: margin,
+          y: by,
+          size: 10,
+          font,
+        });
+        by -= 14;
+      } else {
+        for (const item of items) {
+          const wrapped = wrapText(`• ${item}`, font, 10, bw - margin * 2);
+          for (const l of wrapped) {
+            bulletsPage.drawText(l, { x: margin, y: by, size: 10, font });
+            by -= 14;
+          }
+        }
+      }
+
+      by -= 10;
+    }
+  }
+
+  const brandingPage = pdfDoc.addPage();
+  const { height: brh } = brandingPage.getSize();
+  let bry = brh - margin;
+
+  brandingPage.drawText("Branding", {
+    x: margin,
+    y: bry - 24,
+    size: 16,
+    font: boldFont,
   });
+  bry -= 24 + 16;
+
+  brandingPage.drawText("Agent", {
+    x: margin,
+    y: bry,
+    size: 12,
+    font: boldFont,
+  });
+  bry -= 16;
+
+  const agentLines = [
+    `${agent.name} | ${agent.brokerage}`.trim(),
+    `Phone: ${agent.phone} | Email: ${agent.email}`,
+    agent.primaryColor
+      ? `Brand colors: ${agent.primaryColor}${agent.secondaryColor ? `, ${agent.secondaryColor}` : ""}`
+      : "",
+  ].filter(Boolean);
+
+  for (const line of agentLines) {
+    const wrapped = wrapText(line, font, 10, width - margin * 2);
+    for (const l of wrapped) {
+      brandingPage.drawText(l, { x: margin, y: bry, size: 10, font });
+      bry -= 14;
+    }
+  }
+
+  if (mortgagePartner) {
+    bry -= 16;
+    brandingPage.drawText("Mortgage Partner (Marketing Only)", {
+      x: margin,
+      y: bry,
+      size: 12,
+      font: boldFont,
+    });
+    bry -= 16;
+
+    const lenderLines = [
+      `${mortgagePartner.name} | ${mortgagePartner.company}`.trim(),
+      `NMLS: ${mortgagePartner.nmlsId}`,
+      `Phone: ${mortgagePartner.phone} | Email: ${mortgagePartner.email}`,
+    ];
+
+    for (const line of lenderLines) {
+      const wrapped = wrapText(line, font, 10, width - margin * 2);
+      for (const l of wrapped) {
+        brandingPage.drawText(l, { x: margin, y: bry, size: 10, font });
+        bry -= 14;
+      }
+    }
+  }
+
+  bry -= 20;
+  const disclaimer =
+    "Sources: Public record data via Estated/ATTOM; agent-confirmed fields as marked; AI-generated text via OpenAI. Data is provided for MLS entry support only—do not treat as a direct MLS feed.";
+  const disclaimerLines = wrapText(disclaimer, font, 8, width - margin * 2);
+  for (const line of disclaimerLines) {
+    brandingPage.drawText(line, {
+      x: margin,
+      y: bry,
+      size: 8,
+      font,
+      color: rgb(0.25, 0.25, 0.25),
+    });
+    bry -= 10;
+  }
+
+  const bytes = await pdfDoc.save();
+  return Buffer.from(bytes);
 }
 
 export interface OpenHouseFlyerPdfInput {
@@ -196,74 +355,178 @@ export async function generateOpenHouseFlyerPdf(
   const qrBuffer = input.qrCodeUrl
     ? await QRCode.toBuffer(input.qrCodeUrl, { width: 240 })
     : null;
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  return renderPdf((doc) => {
-    doc.fontSize(26).text("Open House", { align: "center" });
-    doc.moveDown();
+  const page = pdfDoc.addPage();
+  const { width, height } = page.getSize();
+  const margin = 40;
+  let y = height - margin;
 
-    doc.fontSize(18).text(addressLine, { align: "center" });
-    doc.moveDown();
+  page.drawText("Open House", {
+    x: margin,
+    y: y - 30,
+    size: 26,
+    font: boldFont,
+  });
+  y -= 30 + 16;
 
-    if (input.openHouseDateTime) {
-      doc.fontSize(14).text(input.openHouseDateTime, { align: "center" });
-      doc.moveDown();
-    }
+  const addressLines = wrapText(addressLine, boldFont, 18, width - margin * 2);
+  for (const line of addressLines) {
+    page.drawText(line, {
+      x: margin,
+      y,
+      size: 18,
+      font: boldFont,
+    });
+    y -= 22;
+  }
 
-    const p = listing.property;
-    const highlights = [
-      p.beds.value && `${p.beds.value} beds`,
-      p.baths.value && `${p.baths.value} baths`,
-      p.squareFeet.value && `${p.squareFeet.value} sq ft`,
-      p.lotSizeSqFt.value && `${p.lotSizeSqFt.value} sq ft lot`,
-      p.yearBuilt.value && `Built ${p.yearBuilt.value}`,
-    ].filter(Boolean) as string[];
-
-    if (highlights.length) {
-      doc.fontSize(12).text(highlights.join("  •  "), { align: "center" });
-      doc.moveDown();
-    }
-
-    if (aiContent?.mlsPublicRemarks.standard) {
-      doc.fontSize(12).text(aiContent.mlsPublicRemarks.standard, {
-        align: "left",
+  if (input.openHouseDateTime) {
+    const dateLines = wrapText(input.openHouseDateTime, font, 14, width - margin * 2);
+    for (const line of dateLines) {
+      page.drawText(line, {
+        x: margin,
+        y,
+        size: 14,
+        font,
       });
-      doc.moveDown();
+      y -= 18;
     }
+  }
 
-    doc.fontSize(12).text("Presented by:");
-    doc.fontSize(11).text(`${agent.name} | ${agent.brokerage}`);
-    doc.fontSize(11).text(`Phone: ${agent.phone} | Email: ${agent.email}`);
-    doc.moveDown();
+  const p = listing.property;
+  const highlights = [
+    p.beds.value && `${p.beds.value} beds`,
+    p.baths.value && `${p.baths.value} baths`,
+    p.squareFeet.value && `${p.squareFeet.value} sq ft`,
+    p.lotSizeSqFt.value && `${p.lotSizeSqFt.value} sq ft lot`,
+    p.yearBuilt.value && `Built ${p.yearBuilt.value}`,
+  ].filter(Boolean) as string[];
 
-    if (mortgagePartner) {
-      doc.fontSize(12).text("In partnership with:");
-      doc.fontSize(11).text(`${mortgagePartner.name} | ${mortgagePartner.company}`);
-      doc.fontSize(11).text(`NMLS: ${mortgagePartner.nmlsId}`);
-      doc.fontSize(11).text(`Phone: ${mortgagePartner.phone} | Email: ${mortgagePartner.email}`);
-      doc.moveDown();
+  if (highlights.length) {
+    const highlightText = highlights.join("  •  ");
+    const highlightLines = wrapText(highlightText, font, 12, width - margin * 2);
+    for (const line of highlightLines) {
+      page.drawText(line, {
+        x: margin,
+        y,
+        size: 12,
+        font,
+      });
+      y -= 16;
     }
+  }
 
-    if (qrBuffer) {
-      doc.moveDown();
-      const x = doc.page.margins.left;
-      const y = doc.y;
-      doc.image(qrBuffer, x, y, { fit: [140, 140] });
-      doc.moveDown(8);
-      if (input.qrCodeUrl) {
-        doc.fontSize(9).text(`Property hub: ${input.qrCodeUrl}`);
+  y -= 12;
+  if (aiContent?.mlsPublicRemarks.standard) {
+    const bodyLines = wrapText(aiContent.mlsPublicRemarks.standard, font, 12, width - margin * 2);
+    for (const line of bodyLines) {
+      page.drawText(line, {
+        x: margin,
+        y,
+        size: 12,
+        font,
+      });
+      y -= 16;
+    }
+  }
+
+  y -= 18;
+  page.drawText("Presented by:", {
+    x: margin,
+    y,
+    size: 12,
+    font: boldFont,
+  });
+  y -= 16;
+
+  const agentLines = [
+    `${agent.name} | ${agent.brokerage}`.trim(),
+    `Phone: ${agent.phone} | Email: ${agent.email}`,
+  ];
+  for (const line of agentLines) {
+    const wrapped = wrapText(line, font, 11, width - margin * 2);
+    for (const l of wrapped) {
+      page.drawText(l, { x: margin, y, size: 11, font });
+      y -= 14;
+    }
+  }
+
+  if (mortgagePartner) {
+    y -= 18;
+    page.drawText("In partnership with:", {
+      x: margin,
+      y,
+      size: 12,
+      font: boldFont,
+    });
+    y -= 16;
+
+    const lenderLines = [
+      `${mortgagePartner.name} | ${mortgagePartner.company}`.trim(),
+      `NMLS: ${mortgagePartner.nmlsId}`,
+      `Phone: ${mortgagePartner.phone} | Email: ${mortgagePartner.email}`,
+    ];
+    for (const line of lenderLines) {
+      const wrapped = wrapText(line, font, 11, width - margin * 2);
+      for (const l of wrapped) {
+        page.drawText(l, { x: margin, y, size: 11, font });
+        y -= 14;
       }
     }
+  }
 
-    if (input.smsKeyword && input.smsPhoneNumber) {
-      doc.moveDown();
-      doc.fontSize(12).text(
-        `Text "${input.smsKeyword.toUpperCase()}" to ${input.smsPhoneNumber} for photos, details, and price updates.`,
-      );
+  if (qrBuffer) {
+    const qrImage = await pdfDoc.embedPng(qrBuffer);
+    const qrDim = qrImage.scale(0.6);
+    const qrX = margin;
+    const qrY = margin;
+    page.drawImage(qrImage, {
+      x: qrX,
+      y: qrY,
+      width: qrDim.width,
+      height: qrDim.height,
+    });
+
+    if (input.qrCodeUrl) {
+      page.drawText(`Property hub: ${input.qrCodeUrl}`, {
+        x: qrX,
+        y: qrY - 12,
+        size: 9,
+        font,
+      });
     }
+  }
 
-    doc.moveDown(2);
-    doc.fontSize(7).text(
-      "For marketing use only. Not affiliated with or approved by Stellar MLS. Data source labels: Public record, agent confirmed, or AI-generated as marked in the full Listing Packet.",
+  if (input.smsKeyword && input.smsPhoneNumber) {
+    page.drawText(
+      `Text "${input.smsKeyword.toUpperCase()}" to ${input.smsPhoneNumber} for photos, details, and price updates.`,
+      {
+        x: margin,
+        y: margin,
+        size: 12,
+        font,
+      },
     );
-  });
+  }
+
+  const disclaimer =
+    "For marketing use only. Not affiliated with or approved by Stellar MLS. Data source labels: Public record, agent confirmed, or AI-generated as marked in the full Listing Packet.";
+  const disclaimerLines = wrapText(disclaimer, font, 7, width - margin * 2);
+  let dy = margin + 24;
+  for (const line of disclaimerLines) {
+    page.drawText(line, {
+      x: margin,
+      y: dy,
+      size: 7,
+      font,
+      color: rgb(0.25, 0.25, 0.25),
+    });
+    dy += 9;
+  }
+
+  const bytes = await pdfDoc.save();
+  return Buffer.from(bytes);
 }

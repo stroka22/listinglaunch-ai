@@ -8,6 +8,36 @@ import type {
   PropertyField,
 } from "@/lib/types";
 
+async function loadImageForPdf(pdfDoc: PDFDocument, url: string | null) {
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const arrayBuffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
+    const isPng =
+      contentType.includes("png") || url.toLowerCase().endsWith(".png");
+    if (isPng) {
+      return await pdfDoc.embedPng(bytes);
+    }
+    return await pdfDoc.embedJpg(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function hexToRgbColor(hex: string | null) {
+  if (!hex) return null;
+  const clean = hex.trim().replace("#", "");
+  if (clean.length !== 6) return null;
+  const r = parseInt(clean.slice(0, 2), 16) / 255;
+  const g = parseInt(clean.slice(2, 4), 16) / 255;
+  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return null;
+  return rgb(r, g, b);
+}
+
 function fieldDisplay<T>(label: string, field: PropertyField<T>) {
   const value = field.value == null || field.value === "" ? "—" : String(field.value);
   const source =
@@ -359,18 +389,56 @@ export async function generateOpenHouseFlyerPdf(
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+  const brandColor =
+    hexToRgbColor(agent.primaryColor) ?? rgb(0.07, 0.07, 0.07); // near-black fallback
+  const agentLogoImage = await loadImageForPdf(pdfDoc, agent.logoUrl);
+  const agentHeadshotImage = await loadImageForPdf(pdfDoc, agent.headshotUrl);
+  const lenderHeadshotImage = await loadImageForPdf(
+    pdfDoc,
+    mortgagePartner?.headshotUrl ?? null,
+  );
+
   const page = pdfDoc.addPage();
   const { width, height } = page.getSize();
   const margin = 40;
   let y = height - margin;
 
-  page.drawText("Open House", {
+  if (agentLogoImage) {
+    const maxLogoWidth = 120;
+    const maxLogoHeight = 40;
+    const logoScale = Math.min(
+      maxLogoWidth / agentLogoImage.width,
+      maxLogoHeight / agentLogoImage.height,
+    );
+    const logoWidth = agentLogoImage.width * logoScale;
+    const logoHeight = agentLogoImage.height * logoScale;
+    const logoX = width - margin - logoWidth;
+    const logoY = y - logoHeight + 8;
+    page.drawImage(agentLogoImage, {
+      x: logoX,
+      y: logoY,
+      width: logoWidth,
+      height: logoHeight,
+    });
+  }
+
+  page.drawText("OPEN HOUSE", {
     x: margin,
-    y: y - 30,
-    size: 26,
+    y: y - 32,
+    size: 30,
     font: boldFont,
+    color: brandColor,
   });
-  y -= 30 + 16;
+  y -= 32 + 8;
+
+  page.drawRectangle({
+    x: margin,
+    y: y + 4,
+    width: 80,
+    height: 2,
+    color: brandColor,
+  });
+  y -= 14;
 
   const addressLines = wrapText(addressLine, boldFont, 18, width - margin * 2);
   for (const line of addressLines) {
@@ -384,7 +452,12 @@ export async function generateOpenHouseFlyerPdf(
   }
 
   if (input.openHouseDateTime) {
-    const dateLines = wrapText(input.openHouseDateTime, font, 14, width - margin * 2);
+    const dateLines = wrapText(
+      input.openHouseDateTime,
+      font,
+      14,
+      width - margin * 2,
+    );
     for (const line of dateLines) {
       page.drawText(line, {
         x: margin,
@@ -407,7 +480,12 @@ export async function generateOpenHouseFlyerPdf(
 
   if (highlights.length) {
     const highlightText = highlights.join("  •  ");
-    const highlightLines = wrapText(highlightText, font, 12, width - margin * 2);
+    const highlightLines = wrapText(
+      highlightText,
+      font,
+      12,
+      width - margin * 2,
+    );
     for (const line of highlightLines) {
       page.drawText(line, {
         x: margin,
@@ -421,8 +499,18 @@ export async function generateOpenHouseFlyerPdf(
 
   y -= 12;
   if (aiContent?.mlsPublicRemarks.standard) {
-    const bodyLines = wrapText(aiContent.mlsPublicRemarks.standard, font, 12, width - margin * 2);
+    const availableHeight = y - (margin + 180); // keep footer band clear
+    const bodyLines = wrapText(
+      aiContent.mlsPublicRemarks.standard,
+      font,
+      12,
+      width - margin * 2,
+    );
+    let used = 0;
     for (const line of bodyLines) {
+      if (used + 16 > availableHeight) {
+        break;
+      }
       page.drawText(line, {
         x: margin,
         y,
@@ -430,39 +518,85 @@ export async function generateOpenHouseFlyerPdf(
         font,
       });
       y -= 16;
+      used += 16;
     }
   }
 
-  y -= 18;
-  page.drawText("Presented by:", {
-    x: margin,
-    y,
+  // Agent & lender cards near bottom-left, QR + disclaimers below
+  const footerTextRightLimit = width - margin - (qrBuffer ? 130 : 0);
+
+  let cardTopY = margin + 190;
+  if (cardTopY > y - 40) {
+    cardTopY = Math.max(margin + 140, y - 40);
+  }
+
+  let agentTextX = margin;
+  let agentTextY = cardTopY;
+
+  if (agentHeadshotImage) {
+    const targetHeight = 80;
+    const scale = targetHeight / agentHeadshotImage.height;
+    const imgWidth = agentHeadshotImage.width * scale;
+    const imgHeight = targetHeight;
+    const imgY = cardTopY - imgHeight + 6;
+    page.drawImage(agentHeadshotImage, {
+      x: margin,
+      y: imgY,
+      width: imgWidth,
+      height: imgHeight,
+    });
+    agentTextX = margin + imgWidth + 12;
+  }
+
+  page.drawText("Presented by", {
+    x: agentTextX,
+    y: agentTextY,
     size: 12,
     font: boldFont,
   });
-  y -= 16;
+  agentTextY -= 16;
 
   const agentLines = [
     `${agent.name} | ${agent.brokerage}`.trim(),
     `Phone: ${agent.phone} | Email: ${agent.email}`,
   ];
   for (const line of agentLines) {
-    const wrapped = wrapText(line, font, 11, width - margin * 2);
+    const wrapped = wrapText(line, font, 11, footerTextRightLimit - agentTextX);
     for (const l of wrapped) {
-      page.drawText(l, { x: margin, y, size: 11, font });
-      y -= 14;
+      page.drawText(l, { x: agentTextX, y: agentTextY, size: 11, font });
+      agentTextY -= 14;
     }
   }
 
+  let lenderBlockBottom = agentTextY;
+
   if (mortgagePartner) {
-    y -= 18;
-    page.drawText("In partnership with:", {
-      x: margin,
-      y,
+    let lenderTextX = agentTextX;
+    let lenderTextY = agentTextY - 18;
+
+    if (lenderHeadshotImage) {
+      const targetHeight = 70;
+      const scale = targetHeight / lenderHeadshotImage.height;
+      const imgWidth = lenderHeadshotImage.width * scale;
+      const imgHeight = targetHeight;
+      const imgY = lenderTextY - imgHeight + 6;
+      page.drawImage(lenderHeadshotImage, {
+        x: margin,
+        y: imgY,
+        width: imgWidth,
+        height: imgHeight,
+      });
+      lenderTextX = margin + imgWidth + 12;
+      lenderTextY = imgY + imgHeight - 12;
+    }
+
+    page.drawText("In partnership with", {
+      x: lenderTextX,
+      y: lenderTextY,
       size: 12,
       font: boldFont,
     });
-    y -= 16;
+    lenderTextY -= 16;
 
     const lenderLines = [
       `${mortgagePartner.name} | ${mortgagePartner.company}`.trim(),
@@ -470,39 +604,58 @@ export async function generateOpenHouseFlyerPdf(
       `Phone: ${mortgagePartner.phone} | Email: ${mortgagePartner.email}`,
     ];
     for (const line of lenderLines) {
-      const wrapped = wrapText(line, font, 11, width - margin * 2);
+      const wrapped = wrapText(
+        line,
+        font,
+        11,
+        footerTextRightLimit - lenderTextX,
+      );
       for (const l of wrapped) {
-        page.drawText(l, { x: margin, y, size: 11, font });
-        y -= 14;
+        page.drawText(l, { x: lenderTextX, y: lenderTextY, size: 11, font });
+        lenderTextY -= 14;
       }
     }
+
+    lenderBlockBottom = lenderTextY;
   }
 
   if (qrBuffer) {
     const qrImage = await pdfDoc.embedPng(qrBuffer);
-    const qrDim = qrImage.scale(0.6);
-    const qrX = width - margin - qrDim.width;
-    const qrY = margin;
+    const maxQrSize = 120;
+    const qrScale = Math.min(
+      maxQrSize / qrImage.width,
+      maxQrSize / qrImage.height,
+    );
+    const qrWidth = qrImage.width * qrScale;
+    const qrHeight = qrImage.height * qrScale;
+    const qrX = width - margin - qrWidth;
+    const qrY = margin + 10;
     page.drawImage(qrImage, {
       x: qrX,
       y: qrY,
-      width: qrDim.width,
-      height: qrDim.height,
+      width: qrWidth,
+      height: qrHeight,
     });
 
     if (input.qrCodeUrl) {
-      page.drawText(`Property hub: ${input.qrCodeUrl}`, {
+      page.drawText("Scan to view full listing", {
         x: qrX,
-        y: qrY + qrDim.height + 6,
+        y: qrY + qrHeight + 8,
         size: 9,
-        font,
+        font: boldFont,
       });
     }
   }
 
   const disclaimer =
     "For marketing use only. Not affiliated with or approved by Stellar MLS. Data source labels: Public record, agent confirmed, or AI-generated as marked in the full Listing Packet.";
-  const disclaimerLines = wrapText(disclaimer, font, 7, width - margin * 2 - (qrBuffer ? 120 : 0));
+  const disclaimerLines = wrapText(
+    disclaimer,
+    font,
+    7,
+    footerTextRightLimit - margin,
+  );
+
   let dy = margin + 8;
   for (const line of disclaimerLines) {
     page.drawText(line, {
@@ -517,16 +670,21 @@ export async function generateOpenHouseFlyerPdf(
 
   if (input.smsKeyword && input.smsPhoneNumber) {
     const smsText = `Text "${input.smsKeyword.toUpperCase()}" to ${input.smsPhoneNumber} for photos, details, and price updates.`;
-    const smsLines = wrapText(smsText, font, 11, width - margin * 2 - (qrBuffer ? 120 : 0));
+    const smsLines = wrapText(
+      smsText,
+      font,
+      10,
+      footerTextRightLimit - margin,
+    );
     let sy = dy + 6;
     for (const line of smsLines) {
       page.drawText(line, {
         x: margin,
         y: sy,
-        size: 11,
+        size: 10,
         font,
       });
-      sy += 14;
+      sy += 13;
     }
   }
 

@@ -37,14 +37,18 @@ export default async function ListingHubPage({ params }: PageProps) {
     .maybeSingle();
 
   if (error || !data) {
+    const debugParams = JSON.stringify(params);
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 text-sm text-red-700">
+      <div className="mx-auto max-w-2xl px-4 py-10 text-sm text-red-700 space-y-2">
         <p className="font-semibold">Listing hub could not be loaded.</p>
-        <p className="mt-2 text-xs text-red-600">
-          Debug slug: <code className="rounded bg-red-50 px-1">{params.slug}</code>
+        <p className="text-xs text-red-600">
+          Debug slug: <code className="rounded bg-red-50 px-1">{params.slug || "(none)"}</code>
+        </p>
+        <p className="text-xs text-red-600 break-all">
+          Params: <code className="rounded bg-red-50 px-1">{debugParams}</code>
         </p>
         {error && (
-          <p className="mt-1 text-xs text-red-600">
+          <p className="text-xs text-red-600 break-all">
             Supabase error: <code className="rounded bg-red-50 px-1">{error.message}</code>
           </p>
         )}

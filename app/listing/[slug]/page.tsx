@@ -36,10 +36,19 @@ export default async function ListingHubPage({ params }: PageProps) {
     .single();
 
   if (error || !data) {
-    // Log for debugging 404s in production
-    // eslint-disable-next-line no-console
-    console.error("Listing hub not found", { slug: params.slug, error });
-    notFound();
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-10 text-sm text-red-700">
+        <p className="font-semibold">Listing hub could not be loaded.</p>
+        <p className="mt-2 text-xs text-red-600">
+          Debug slug: <code className="rounded bg-red-50 px-1">{params.slug}</code>
+        </p>
+        {error && (
+          <p className="mt-1 text-xs text-red-600">
+            Supabase error: <code className="rounded bg-red-50 px-1">{error.message}</code>
+          </p>
+        )}
+      </div>
+    );
   }
 
   const row = data as any;

@@ -479,7 +479,7 @@ export async function generateOpenHouseFlyerPdf(
   }
 
   if (photoImages.length > 0) {
-    const bandHeight = 140;
+    const bandHeight = 200;
     const gap = 8;
     const count = photoImages.length;
     const totalGap = gap * (count - 1);
@@ -565,9 +565,9 @@ export async function generateOpenHouseFlyerPdf(
   // Agent & lender cards near bottom-left, QR + disclaimers below
   const footerTextRightLimit = width - margin - (qrBuffer ? 130 : 0);
 
-  let cardTopY = margin + 190;
+  let cardTopY = margin + 150;
   if (cardTopY > y - 40) {
-    cardTopY = Math.max(margin + 140, y - 40);
+    cardTopY = Math.max(margin + 120, y - 40);
   }
 
   let agentTextX = margin;

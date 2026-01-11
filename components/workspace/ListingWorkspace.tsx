@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { DisclosureAnswer, Listing } from "@/lib/types";
+import type { DisclosureAnswer, Listing, MortgagePartnerProfile } from "@/lib/types";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createEmptyDisclosures,
@@ -66,6 +66,10 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+
+  const [lender, setLender] = useState<MortgagePartnerProfile | null>(null);
+  const [lenderSaving, setLenderSaving] = useState(false);
+  const [lenderError, setLenderError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -132,6 +136,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           });
 
         setDisclosures(initial);
+
+        const lenderBranding = loaded.branding?.mortgagePartner ?? null;
+        setLender(lenderBranding as any);
       } catch (err: any) {
         setLoadError(err?.message ?? "Failed to load listing");
         setListing(null);
@@ -310,6 +317,51 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
       );
     } catch (err: any) {
       setPhotoError(err?.message ?? "Could not remove photo");
+    }
+  }
+
+  async function handleSaveLender() {
+    if (!listing) return;
+    setLenderError(null);
+    setLenderSaving(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+
+      const existingBranding = listing.branding ?? null;
+
+      const cleanedLender: MortgagePartnerProfile | null = lender
+        ? {
+            ...lender,
+            id: lender.id || "temp-lender",
+            agentId: listing.agentId,
+          }
+        : null;
+
+      const updatedBranding = {
+        agent: existingBranding?.agent ?? null,
+        mortgagePartner: cleanedLender,
+      };
+
+      const { error } = await supabase
+        .from("listings")
+        .update({ branding: updatedBranding })
+        .eq("id", listing.id);
+
+      if (error) throw error;
+
+      setListing((prev) =>
+        prev
+          ? ({
+              ...prev,
+              branding: updatedBranding,
+            } as Listing)
+          : prev,
+      );
+    } catch (err: any) {
+      setLenderError(err?.message ?? "Could not save mortgage partner");
+    } finally {
+      setLenderSaving(false);
     }
   }
 
@@ -642,6 +694,128 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 ))}
               </div>
             )}
+          </section>
+
+          <section className="mt-4 space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold text-zinc-800">
+                Mortgage partner (optional co-branding)
+              </h2>
+              <span className="text-[10px] text-zinc-500">
+                Shown on co-branded flyer version only
+              </span>
+            </div>
+
+            <p className="text-[11px] text-zinc-600">
+              Leave blank if you don&apos;t want a lender on this listing. To show
+              a co-branded flyer, fill in at least name, company, and NMLS.
+            </p>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <div className="text-[11px] font-medium text-zinc-700">
+                  Lender details
+                </div>
+                <input
+                  placeholder="Name"
+                  value={lender?.name ?? ""}
+                  onChange={(e) =>
+                    setLender((prev) => ({
+                      ...(prev ?? ({
+                        id: "temp-lender",
+                        agentId: listing.agentId,
+                        name: "",
+                        company: "",
+                        nmlsId: "",
+                        phone: "",
+                        email: "",
+                        headshotUrl: null,
+                        logoUrl: null,
+                        bio: null,
+                        bioSource: "ai_generated",
+                      } as MortgagePartnerProfile)),
+                      name: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+                />
+                <input
+                  placeholder="Company"
+                  value={lender?.company ?? ""}
+                  onChange={(e) =>
+                    setLender((prev) => ({
+                      ...(prev as MortgagePartnerProfile),
+                      company: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+                />
+                <input
+                  placeholder="NMLS ID"
+                  value={lender?.nmlsId ?? ""}
+                  onChange={(e) =>
+                    setLender((prev) => ({
+                      ...(prev as MortgagePartnerProfile),
+                      nmlsId: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-[11px] font-medium text-zinc-700">
+                  Contact & headshot
+                </div>
+                <input
+                  placeholder="Phone"
+                  value={lender?.phone ?? ""}
+                  onChange={(e) =>
+                    setLender((prev) => ({
+                      ...(prev as MortgagePartnerProfile),
+                      phone: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+                />
+                <input
+                  placeholder="Email"
+                  value={lender?.email ?? ""}
+                  onChange={(e) =>
+                    setLender((prev) => ({
+                      ...(prev as MortgagePartnerProfile),
+                      email: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+                />
+                <input
+                  placeholder="Headshot URL (optional)"
+                  value={lender?.headshotUrl ?? ""}
+                  onChange={(e) =>
+                    setLender((prev) => ({
+                      ...(prev as MortgagePartnerProfile),
+                      headshotUrl: e.target.value || null,
+                    }))
+                  }
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+                />
+              </div>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveLender}
+                disabled={lenderSaving}
+                className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+              >
+                {lenderSaving ? "Saving…" : "Save mortgage partner"}
+              </button>
+              {lenderError && (
+                <span className="text-[11px] text-red-600">{lenderError}</span>
+              )}
+            </div>
           </section>
         </>
       )}

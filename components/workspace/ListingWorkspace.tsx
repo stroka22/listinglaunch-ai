@@ -243,27 +243,36 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
   async function handlePhotoUpload(e: any) {
     if (!listing) return;
-    const file: File | undefined = e.target?.files?.[0];
-    if (!file) return;
+    const files: FileList | undefined = e.target?.files;
+    if (!files || files.length === 0) return;
     setPhotoUploading(true);
     setPhotoError(null);
 
     try {
       const supabase = getSupabaseBrowserClient();
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `listings/${listing.id}/photo-${Date.now()}.${ext}`;
+      const currentPhotos = listing.photos ?? [];
+      const newUrls: string[] = [];
 
-      const { error: uploadError } = await supabase.storage
-        .from("branding-assets")
-        .upload(path, file, { upsert: true });
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `listings/${listing.id}/photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from("branding-assets")
+          .upload(path, file, { upsert: true });
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("branding-assets").getPublicUrl(path);
+        if (uploadError) throw uploadError;
 
-      const nextPhotos = [...(listing.photos ?? []), publicUrl];
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("branding-assets").getPublicUrl(path);
+
+        newUrls.push(publicUrl);
+      }
+
+      if (newUrls.length === 0) return;
+
+      const nextPhotos = [...currentPhotos, ...newUrls];
 
       const { error: updateError } = await supabase
         .from("listings")
@@ -276,7 +285,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
         prev ? ({ ...prev, photos: nextPhotos } as Listing) : prev,
       );
     } catch (err: any) {
-      setPhotoError(err?.message ?? "Could not upload photo");
+      setPhotoError(err?.message ?? "Could not upload photo(s)");
     } finally {
       setPhotoUploading(false);
       if (e.target) {
@@ -597,11 +606,12 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handlePhotoUpload}
                   className="hidden"
                   disabled={photoUploading}
                 />
-                {photoUploading ? "Uploading…" : "Upload photo"}
+                {photoUploading ? "Uploading…" : "Upload photos"}
               </label>
 
               {photoError && (

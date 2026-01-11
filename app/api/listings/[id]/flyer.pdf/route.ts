@@ -123,6 +123,7 @@ export async function GET(request: NextRequest, context: any) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": "inline; filename=open-house-flyer.pdf",
+        "Cache-Control": "no-store, max-age=0",
       },
     });
   } catch (err: any) {

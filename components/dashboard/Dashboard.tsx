@@ -633,12 +633,16 @@ export function Dashboard({ session }: DashboardProps) {
                       </a>
                       <a
                         href={`/api/listings/${selected.id}/flyer.pdf?co=0`}
+                        target="_blank"
+                        rel="noreferrer noopener"
                         className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
                       >
                         Flyer (agent only)
                       </a>
                       <a
                         href={`/api/listings/${selected.id}/flyer.pdf?co=1`}
+                        target="_blank"
+                        rel="noreferrer noopener"
                         className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
                       >
                         Co-branded flyer
@@ -769,12 +773,16 @@ export function Dashboard({ session }: DashboardProps) {
                         </a>
                         <a
                           href={`/api/listings/${listing.id}/flyer.pdf?co=0`}
+                          target="_blank"
+                          rel="noreferrer noopener"
                           className="rounded-full border border-zinc-300 px-2 py-0.5 hover:bg-zinc-100"
                         >
                           Flyer (agent only)
                         </a>
                         <a
                           href={`/api/listings/${listing.id}/flyer.pdf?co=1`}
+                          target="_blank"
+                          rel="noreferrer noopener"
                           className="rounded-full border border-zinc-300 px-2 py-0.5 hover:bg-zinc-100"
                         >
                           Co-branded flyer

@@ -48,20 +48,52 @@ export async function GET(request: NextRequest, context: any) {
       wizardAnswers: row.wizard_answers,
     };
 
-    const agent =
-      listing.branding?.agent ??
-      ({
-        id: listing.agentId,
-        userId: listing.agentId,
-        name: "Listing agent",
-        brokerage: "",
-        phone: "",
-        email: "",
-        headshotUrl: null,
-        logoUrl: null,
-        primaryColor: null,
-        secondaryColor: null,
-      } as any);
+    const agentFromListing = listing.branding?.agent ?? null;
+
+    const { data: profileRow } = await supabase
+      .from("agent_profiles")
+      .select(
+        "name, brokerage, phone, email, headshot_url, logo_url, primary_color, secondary_color",
+      )
+      .eq("id", listing.agentId)
+      .maybeSingle();
+
+    const agent = {
+      id: listing.agentId,
+      userId: listing.agentId,
+      name:
+        (profileRow?.name as string | null) ??
+        agentFromListing?.name ??
+        "",
+      brokerage:
+        (profileRow?.brokerage as string | null) ??
+        agentFromListing?.brokerage ??
+        "",
+      phone:
+        (profileRow?.phone as string | null) ??
+        agentFromListing?.phone ??
+        "",
+      email:
+        (profileRow?.email as string | null) ??
+        agentFromListing?.email ??
+        "",
+      headshotUrl:
+        (profileRow?.headshot_url as string | null) ??
+        agentFromListing?.headshotUrl ??
+        null,
+      logoUrl:
+        (profileRow?.logo_url as string | null) ??
+        agentFromListing?.logoUrl ??
+        null,
+      primaryColor:
+        (profileRow?.primary_color as string | null) ??
+        agentFromListing?.primaryColor ??
+        null,
+      secondaryColor:
+        (profileRow?.secondary_color as string | null) ??
+        agentFromListing?.secondaryColor ??
+        null,
+    } as any;
 
     const mortgagePartner = listing.branding?.mortgagePartner ?? null;
 

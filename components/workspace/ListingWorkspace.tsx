@@ -70,6 +70,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
   const [lender, setLender] = useState<MortgagePartnerProfile | null>(null);
   const [lenderSaving, setLenderSaving] = useState(false);
   const [lenderError, setLenderError] = useState<string | null>(null);
+  const [lenderHeadshotUploading, setLenderHeadshotUploading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -362,6 +363,82 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
       setLenderError(err?.message ?? "Could not save mortgage partner");
     } finally {
       setLenderSaving(false);
+    }
+  }
+
+  async function handleLenderHeadshotUpload(e: any) {
+    if (!listing) return;
+    const file: File | undefined = e.target?.files?.[0];
+    if (!file) return;
+    setLenderHeadshotUploading(true);
+    setLenderError(null);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `lenders/${listing.agentId}/${listing.id}/headshot-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("branding-assets")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("branding-assets").getPublicUrl(path);
+
+      const base: MortgagePartnerProfile =
+        lender ??
+        ({
+          id: "temp-lender",
+          agentId: listing.agentId,
+          name: "",
+          company: "",
+          nmlsId: "",
+          phone: "",
+          email: "",
+          headshotUrl: null,
+          logoUrl: null,
+          bio: null,
+          bioSource: "ai_generated",
+        } as MortgagePartnerProfile);
+
+      const nextLender: MortgagePartnerProfile = {
+        ...base,
+        agentId: listing.agentId,
+        headshotUrl: publicUrl,
+      };
+
+      const existingBranding = listing.branding ?? null;
+      const updatedBranding = {
+        agent: existingBranding?.agent ?? null,
+        mortgagePartner: nextLender,
+      };
+
+      const { error: updateError } = await supabase
+        .from("listings")
+        .update({ branding: updatedBranding })
+        .eq("id", listing.id);
+
+      if (updateError) throw updateError;
+
+      setLender(nextLender);
+      setListing((prev) =>
+        prev
+          ? ({
+              ...prev,
+              branding: updatedBranding,
+            } as Listing)
+          : prev,
+      );
+    } catch (err: any) {
+      setLenderError(err?.message ?? "Could not upload lender headshot");
+    } finally {
+      setLenderHeadshotUploading(false);
+      if (e.target) {
+        e.target.value = "";
+      }
     }
   }
 
@@ -789,17 +866,36 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   }
                   className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
                 />
-                <input
-                  placeholder="Headshot URL (optional)"
-                  value={lender?.headshotUrl ?? ""}
-                  onChange={(e) =>
-                    setLender((prev) => ({
-                      ...(prev as MortgagePartnerProfile),
-                      headshotUrl: e.target.value || null,
-                    }))
-                  }
-                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    placeholder="Headshot URL (optional)"
+                    value={lender?.headshotUrl ?? ""}
+                    onChange={(e) =>
+                      setLender((prev) => ({
+                        ...(prev as MortgagePartnerProfile),
+                        headshotUrl: e.target.value || null,
+                      }))
+                    }
+                    className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px] md:flex-1"
+                  />
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-zinc-300 px-2 py-1 text-[10px] font-medium text-zinc-700 hover:bg-zinc-100">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      onChange={handleLenderHeadshotUpload}
+                      className="hidden"
+                      disabled={lenderHeadshotUploading}
+                    />
+                    {lenderHeadshotUploading ? "Uploading…" : "Upload"}
+                  </label>
+                  {lender?.headshotUrl && (
+                    <img
+                      src={lender.headshotUrl}
+                      alt="Lender headshot"
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  )}
+                </div>
               </div>
             </div>
 

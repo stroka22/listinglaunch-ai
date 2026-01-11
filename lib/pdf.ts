@@ -389,8 +389,8 @@ export async function generateOpenHouseFlyerPdf(
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const brandColor =
-    hexToRgbColor(agent.primaryColor) ?? rgb(0.07, 0.07, 0.07); // near-black fallback
+  // Co-branded flyer uses a clean black header like the reference example
+  const brandColor = rgb(0, 0, 0);
   const agentLogoImage = await loadImageForPdf(pdfDoc, agent.logoUrl);
   const agentHeadshotImage = await loadImageForPdf(pdfDoc, agent.headshotUrl);
   const lenderHeadshotImage = await loadImageForPdf(
@@ -438,16 +438,7 @@ export async function generateOpenHouseFlyerPdf(
     font: boldFont,
     color: brandColor,
   });
-  y -= 32 + 8;
-
-  page.drawRectangle({
-    x: margin,
-    y: y + 4,
-    width: 80,
-    height: 2,
-    color: brandColor,
-  });
-  y -= 14;
+  y -= 32 + 10; // a bit more breathing room before the address, no underline bar
 
   const addressLines = wrapText(addressLine, boldFont, 18, width - margin * 2);
   for (const line of addressLines) {
@@ -479,7 +470,7 @@ export async function generateOpenHouseFlyerPdf(
   }
 
   if (photoImages.length > 0) {
-    const bandHeight = 220;
+    const bandHeight = 200; // slightly shorter strip to match reference flyer proportions
     const gap = 8;
     const count = photoImages.length;
     const totalGap = gap * (count - 1);
@@ -545,7 +536,9 @@ export async function generateOpenHouseFlyerPdf(
 
   y -= 4;
   if (aiContent?.mlsPublicRemarks.standard) {
-    const availableHeight = y - (margin + 115); // keep footer band clear while reducing white space
+    // Leave generous white space between remarks and the bottom band,
+    // matching the co-branded reference flyer.
+    const availableHeight = y - (margin + 160);
     const bodyLines = wrapText(
       aiContent.mlsPublicRemarks.standard,
       font,

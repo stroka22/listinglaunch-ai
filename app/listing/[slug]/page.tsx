@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import type { Listing } from "@/lib/types";
 import { LeadForm } from "@/components/listing/LeadForm";
 

@@ -481,7 +481,7 @@ export async function generateOpenHouseFlyerPdf(
   if (qrBuffer) {
     const qrImage = await pdfDoc.embedPng(qrBuffer);
     const qrDim = qrImage.scale(0.6);
-    const qrX = margin;
+    const qrX = width - margin - qrDim.width;
     const qrY = margin;
     page.drawImage(qrImage, {
       x: qrX,
@@ -493,29 +493,17 @@ export async function generateOpenHouseFlyerPdf(
     if (input.qrCodeUrl) {
       page.drawText(`Property hub: ${input.qrCodeUrl}`, {
         x: qrX,
-        y: qrY - 12,
+        y: qrY + qrDim.height + 6,
         size: 9,
         font,
       });
     }
   }
 
-  if (input.smsKeyword && input.smsPhoneNumber) {
-    page.drawText(
-      `Text "${input.smsKeyword.toUpperCase()}" to ${input.smsPhoneNumber} for photos, details, and price updates.`,
-      {
-        x: margin,
-        y: margin,
-        size: 12,
-        font,
-      },
-    );
-  }
-
   const disclaimer =
     "For marketing use only. Not affiliated with or approved by Stellar MLS. Data source labels: Public record, agent confirmed, or AI-generated as marked in the full Listing Packet.";
-  const disclaimerLines = wrapText(disclaimer, font, 7, width - margin * 2);
-  let dy = margin + 24;
+  const disclaimerLines = wrapText(disclaimer, font, 7, width - margin * 2 - (qrBuffer ? 120 : 0));
+  let dy = margin + 8;
   for (const line of disclaimerLines) {
     page.drawText(line, {
       x: margin,
@@ -525,6 +513,21 @@ export async function generateOpenHouseFlyerPdf(
       color: rgb(0.25, 0.25, 0.25),
     });
     dy += 9;
+  }
+
+  if (input.smsKeyword && input.smsPhoneNumber) {
+    const smsText = `Text "${input.smsKeyword.toUpperCase()}" to ${input.smsPhoneNumber} for photos, details, and price updates.`;
+    const smsLines = wrapText(smsText, font, 11, width - margin * 2 - (qrBuffer ? 120 : 0));
+    let sy = dy + 6;
+    for (const line of smsLines) {
+      page.drawText(line, {
+        x: margin,
+        y: sy,
+        size: 11,
+        font,
+      });
+      sy += 14;
+    }
   }
 
   const bytes = await pdfDoc.save();

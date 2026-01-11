@@ -59,6 +59,11 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
   >("idle");
   const [regenError, setRegenError] = useState<string | null>(null);
 
+  const [openHouseDetails, setOpenHouseDetails] = useState("");
+  const [openHouseSaving, setOpenHouseSaving] = useState(false);
+  const [openHouseError, setOpenHouseError] = useState<string | null>(null);
+  const [openHouseSaved, setOpenHouseSaved] = useState(false);
+
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -111,6 +116,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
         };
 
         setListing(loaded);
+
+        const openHouse = (loaded.wizardAnswers as any)?.open_house_details ?? "";
+        setOpenHouseDetails(openHouse || "");
 
         const initial =
           loaded.disclosures ??
@@ -184,6 +192,48 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
     } catch (err: any) {
       setRegenError(err?.message ?? "Could not regenerate AI assets");
       setRegenStatus("error");
+    }
+  }
+
+  async function handleSaveOpenHouseDetails() {
+    if (!listing) return;
+    setOpenHouseError(null);
+    setOpenHouseSaving(true);
+    setOpenHouseSaved(false);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const currentAnswers = (listing.wizardAnswers ?? {}) as Record<string, string>;
+      const updatedAnswers: Record<string, string> = { ...currentAnswers };
+
+      const trimmed = openHouseDetails.trim();
+      if (trimmed) {
+        (updatedAnswers as any).open_house_details = trimmed;
+      } else {
+        delete (updatedAnswers as any).open_house_details;
+      }
+
+      const { error } = await supabase
+        .from("listings")
+        .update({ wizard_answers: updatedAnswers })
+        .eq("id", listing.id);
+
+      if (error) throw error;
+
+      setListing((prev) =>
+        prev
+          ? ({
+              ...prev,
+              wizardAnswers: updatedAnswers,
+            } as Listing)
+          : prev,
+      );
+
+      setOpenHouseSaved(true);
+      setTimeout(() => setOpenHouseSaved(false), 2000);
+    } catch (err: any) {
+      setOpenHouseError(err?.message ?? "Could not save open house details");
+    } finally {
+      setOpenHouseSaving(false);
     }
   }
 
@@ -420,6 +470,47 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           </section>
             </div>
           )}
+
+          <section className="mt-4 space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold text-zinc-800">Open house details</h2>
+              <span className="text-[10px] text-zinc-500">
+                Optional line shown on the open house flyer
+              </span>
+            </div>
+
+            <p className="text-[11px] text-zinc-600">
+              Example: <span className="italic">Saturday, Feb 3, 1:00–4:00 PM</span>
+            </p>
+
+            <textarea
+              className="mt-1 block w-full rounded-md border border-zinc-300 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-800 focus:border-black focus:outline-none"
+              rows={2}
+              value={openHouseDetails}
+              onChange={(e) => setOpenHouseDetails(e.target.value)}
+              placeholder="Add open house date/time (optional)"
+            />
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveOpenHouseDetails}
+                disabled={openHouseSaving}
+                className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+              >
+                {openHouseSaving ? "Saving…" : "Save open house details"}
+              </button>
+              {openHouseSaved && !openHouseError && (
+                <span className="text-[11px] text-emerald-600">
+                  Saved.
+                </span>
+              )}
+            </div>
+
+            {openHouseError && (
+              <p className="text-[11px] text-red-600">{openHouseError}</p>
+            )}
+          </section>
         </>
       )}
 

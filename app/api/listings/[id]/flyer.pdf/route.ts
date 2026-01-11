@@ -71,12 +71,15 @@ export async function GET(request: NextRequest, context: any) {
     const includeMortgagePartner =
       includeMortgageParam === null ? true : includeMortgageParam === "1";
 
+    const openHouseDateTime =
+      (listing.wizardAnswers as any)?.open_house_details ?? null;
+
     const pdfBuffer = await generateOpenHouseFlyerPdf({
       listing,
       aiContent: listing.aiContent ?? null,
       agent,
       mortgagePartner: includeMortgagePartner ? mortgagePartner : null,
-      openHouseDateTime: null,
+      openHouseDateTime,
       qrCodeUrl: hubUrl,
       smsKeyword: listing.smsKeyword,
       smsPhoneNumber: listing.smsPhoneNumber,

@@ -605,7 +605,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-zinc-300 px-3 py-1.5 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png"
                   multiple
                   onChange={handlePhotoUpload}
                   className="hidden"

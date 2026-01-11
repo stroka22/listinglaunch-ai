@@ -698,8 +698,8 @@ export async function generateOpenHouseFlyerPdf(
 
   let dy = margin + 8;
 
-  // Temporary debug: show how many photos were loaded into the flyer.
-  const debugPhotosLine = `Photos loaded: ${photoImages.length}`;
+  // Temporary debug: show how many photos were present vs embedded.
+  const debugPhotosLine = `Photos (raw): ${photoUrls.length} • embedded: ${photoImages.length}`;
   page.drawText(debugPhotosLine, {
     x: margin,
     y: dy,

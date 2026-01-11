@@ -1,82 +1,112 @@
-import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+"use client";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import { useEffect, useState } from "react";
 import type { Listing } from "@/lib/types";
 import { LeadForm } from "@/components/listing/LeadForm";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-interface PageProps {
-  params: { slug: string };
-}
+export default function ListingHubPage() {
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [slug, setSlug] = useState<string | null>(null);
 
-export default async function ListingHubPage({ params }: PageProps) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  useEffect(() => {
+    async function load() {
+      try {
+        const path = window.location.pathname; // /listing/<slug>
+        const parts = path.split("/").filter(Boolean);
+        const rawSlug = parts[1] ?? null; // [0] = "listing", [1] = slug
 
-  if (!url || !anonKey) {
-    // eslint-disable-next-line no-console
-    console.error("Listing hub Supabase env missing", {
-      hasUrl: !!url,
-      hasAnon: !!anonKey,
-    });
-    notFound();
+        if (!rawSlug) {
+          setError("No slug in URL path.");
+          setLoading(false);
+          return;
+        }
+
+        const decodedSlug = decodeURIComponent(rawSlug);
+        setSlug(decodedSlug);
+
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from("listings")
+          .select(
+            "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers",
+          )
+          .eq("slug", decodedSlug)
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          setError(error.message);
+          setLoading(false);
+          return;
+        }
+
+        if (!data) {
+          setError("Listing not found.");
+          setLoading(false);
+          return;
+        }
+
+        const row = data as any;
+
+        const loaded: Listing = {
+          id: row.id,
+          agentId: row.agent_id,
+          slug: row.slug,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          street: row.street,
+          city: row.city,
+          state: row.state,
+          postalCode: row.postal_code,
+          status: row.status,
+          smsKeyword: row.sms_keyword,
+          smsPhoneNumber: row.sms_phone_number,
+          estatedRaw: row.estated_raw,
+          property: row.property,
+          branding: row.branding,
+          aiContent: row.ai_content,
+          wizardAnswers: row.wizard_answers,
+        };
+
+        setListing(loaded);
+      } catch (err: any) {
+        setError(err?.message ?? "Failed to load listing hub.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-zinc-500">
+        Loading listing hub...
+      </div>
+    );
   }
 
-  const supabase = createClient(url, anonKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data, error } = await supabase
-    .from("listings")
-    .select(
-      "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers",
-    )
-    .eq("slug", params.slug)
-    .limit(1)
-    .maybeSingle();
-
-  if (error || !data) {
-    const debugParams = JSON.stringify(params);
+  if (error || !listing) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10 text-sm text-red-700 space-y-2">
         <p className="font-semibold">Listing hub could not be loaded.</p>
-        <p className="text-xs text-red-600">
-          Debug slug: <code className="rounded bg-red-50 px-1">{params.slug || "(none)"}</code>
-        </p>
-        <p className="text-xs text-red-600 break-all">
-          Params: <code className="rounded bg-red-50 px-1">{debugParams}</code>
-        </p>
+        {slug && (
+          <p className="text-xs text-red-600">
+            Debug slug: <code className="rounded bg-red-50 px-1">{slug}</code>
+          </p>
+        )}
         {error && (
           <p className="text-xs text-red-600 break-all">
-            Supabase error: <code className="rounded bg-red-50 px-1">{error.message}</code>
+            Error: <code className="rounded bg-red-50 px-1">{error}</code>
           </p>
         )}
       </div>
     );
   }
-
-  const row = data as any;
-
-  const listing: Listing = {
-    id: row.id,
-    agentId: row.agent_id,
-    slug: row.slug,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    street: row.street,
-    city: row.city,
-    state: row.state,
-    postalCode: row.postal_code,
-    status: row.status,
-    smsKeyword: row.sms_keyword,
-    smsPhoneNumber: row.sms_phone_number,
-    estatedRaw: row.estated_raw,
-    property: row.property,
-    branding: row.branding,
-    aiContent: row.ai_content,
-    wizardAnswers: row.wizard_answers,
-  };
 
   const agent = listing.branding?.agent;
   const lender = listing.branding?.mortgagePartner ?? null;
@@ -129,9 +159,7 @@ export default async function ListingHubPage({ params }: PageProps) {
         <div className="space-y-4">
           {ai && (
             <div className="rounded-lg border border-zinc-200 bg-white p-3 space-y-2 text-xs">
-              <div className="font-semibold text-zinc-800">
-                Highlights
-              </div>
+              <div className="font-semibold text-zinc-800">Highlights</div>
               <div>
                 <div className="font-medium text-zinc-700">Interior</div>
                 <ul className="list-disc list-inside text-zinc-700">
@@ -204,8 +232,7 @@ export default async function ListingHubPage({ params }: PageProps) {
             <LeadForm listingId={listing.id} />
             {listing.smsKeyword && listing.smsPhoneNumber && (
               <p className="text-[11px] text-zinc-600">
-                Prefer text? Reply "{listing.smsKeyword.toUpperCase()}" to
-                {" "}
+                Prefer text? Reply "{listing.smsKeyword.toUpperCase()}" to {" "}
                 {listing.smsPhoneNumber} to get a link to this page.
               </p>
             )}

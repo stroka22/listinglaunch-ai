@@ -519,27 +519,33 @@ export async function generateOpenHouseFlyerPdf(
   ].filter(Boolean) as string[];
 
   if (highlights.length) {
-    const highlightText = highlights.join("  •  ");
-    const highlightLines = wrapText(
-      highlightText,
-      font,
-      12,
-      width - margin * 2,
-    );
-    for (const line of highlightLines) {
-      page.drawText(line, {
-        x: margin,
-        y,
-        size: 12,
-        font,
-      });
-      y -= 16;
+    page.drawText("FEATURES", {
+      x: margin,
+      y,
+      size: 12,
+      font: boldFont,
+    });
+    y -= 16;
+
+    for (const item of highlights) {
+      const wrapped = wrapText(`• ${item}`, font, 11, width - margin * 2);
+      for (const line of wrapped) {
+        page.drawText(line, {
+          x: margin,
+          y,
+          size: 11,
+          font,
+        });
+        y -= 14;
+      }
     }
+
+    y -= 8;
   }
 
-  y -= 12;
+  y -= 4;
   if (aiContent?.mlsPublicRemarks.standard) {
-    const availableHeight = y - (margin + 180); // keep footer band clear
+    const availableHeight = y - (margin + 135); // keep footer band clear while reducing white space
     const bodyLines = wrapText(
       aiContent.mlsPublicRemarks.standard,
       font,
@@ -565,9 +571,9 @@ export async function generateOpenHouseFlyerPdf(
   // Agent & lender cards near bottom-left, QR + disclaimers below
   const footerTextRightLimit = width - margin - (qrBuffer ? 130 : 0);
 
-  let cardTopY = y - 120;
-  if (cardTopY < margin + 130) {
-    cardTopY = margin + 130;
+  let cardTopY = y - 80;
+  if (cardTopY < margin + 115) {
+    cardTopY = margin + 115;
   }
 
   let agentTextX = margin;

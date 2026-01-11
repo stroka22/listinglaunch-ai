@@ -536,9 +536,9 @@ export async function generateOpenHouseFlyerPdf(
 
   y -= 4;
   if (aiContent?.mlsPublicRemarks.standard) {
-    // Leave generous white space between remarks and the bottom band,
-    // matching the co-branded reference flyer.
-    const availableHeight = y - (margin + 160);
+    // Keep some white space between remarks and the bottom band,
+    // similar to the reference co-branded flyer.
+    const availableHeight = y - (margin + 150);
     const bodyLines = wrapText(
       aiContent.mlsPublicRemarks.standard,
       font,
@@ -561,39 +561,32 @@ export async function generateOpenHouseFlyerPdf(
     }
   }
 
-  // Agent & lender cards in two columns, QR to the far right
+  // Agent & lender band: fixed positions to closely emulate co-branded reference
   const footerTextRightLimit = width - margin - (qrBuffer ? 130 : 0);
 
-  const contentWidth = width - margin * 2;
-  const columnGap = 28;
-  const columnWidth = (contentWidth - columnGap) / 2;
+  const agentPhotoSize = 80;
+  const lenderPhotoSize = 80;
 
-  const leftColX = margin;
-  const rightColX = margin + columnWidth + columnGap;
+  // Place cards a fixed distance from the bottom of the page
+  const cardsTopY = margin + 155;
 
-  let cardTopY = y - 80;
-  if (cardTopY < margin + 115) {
-    cardTopY = margin + 115;
-  }
-
-  // Agent (left column)
-  let agentTextX = leftColX;
-  let agentTextY = cardTopY;
+  // Agent block (left)
+  let agentTextX = margin + agentPhotoSize + 10;
+  let agentTextY = cardsTopY - 4;
 
   if (agentHeadshotImage) {
-    const targetHeight = 80;
-    const scale = targetHeight / agentHeadshotImage.height;
+    const scale = agentPhotoSize / agentHeadshotImage.height;
     const imgWidth = agentHeadshotImage.width * scale;
-    const imgHeight = targetHeight;
-    const imgY = cardTopY - imgHeight + 6;
+    const imgHeight = agentHeadshotImage.height * scale;
+    const imgY = cardsTopY - imgHeight;
     page.drawImage(agentHeadshotImage, {
-      x: leftColX,
+      x: margin,
       y: imgY,
       width: imgWidth,
       height: imgHeight,
     });
-    agentTextX = leftColX + imgWidth + 10;
-    agentTextY = imgY + imgHeight - 10;
+    agentTextX = margin + imgWidth + 10;
+    agentTextY = imgY + imgHeight - 8;
   }
 
   page.drawText("Presented by", {
@@ -609,37 +602,32 @@ export async function generateOpenHouseFlyerPdf(
     `Phone: ${agent.phone} | Email: ${agent.email}`,
   ];
   for (const line of agentLines) {
-    const wrapped = wrapText(
-      line,
-      font,
-      11,
-      leftColX + columnWidth - agentTextX,
-    );
+    const wrapped = wrapText(line, font, 11, footerTextRightLimit - agentTextX);
     for (const l of wrapped) {
       page.drawText(l, { x: agentTextX, y: agentTextY, size: 11, font });
       agentTextY -= 14;
     }
   }
 
-  // Lender (right column)
-  let lenderTextX = rightColX;
-  let lenderTextY = cardTopY;
-
+  // Lender block (center-left)
   if (mortgagePartner) {
+    let lenderBlockX = margin + 220; // visually centered between agent and QR
+    let lenderTextX = lenderBlockX + lenderPhotoSize + 10;
+    let lenderTextY = cardsTopY - 4;
+
     if (lenderHeadshotImage) {
-      const targetHeight = 70;
-      const scale = targetHeight / lenderHeadshotImage.height;
+      const scale = lenderPhotoSize / lenderHeadshotImage.height;
       const imgWidth = lenderHeadshotImage.width * scale;
-      const imgHeight = targetHeight;
-      const imgY = cardTopY - imgHeight + 6;
+      const imgHeight = lenderHeadshotImage.height * scale;
+      const imgY = cardsTopY - imgHeight;
       page.drawImage(lenderHeadshotImage, {
-        x: rightColX,
+        x: lenderBlockX,
         y: imgY,
         width: imgWidth,
         height: imgHeight,
       });
-      lenderTextX = rightColX + imgWidth + 10;
-      lenderTextY = imgY + imgHeight - 10;
+      lenderTextX = lenderBlockX + imgWidth + 10;
+      lenderTextY = imgY + imgHeight - 8;
     }
 
     page.drawText("In partnership with", {
@@ -660,7 +648,7 @@ export async function generateOpenHouseFlyerPdf(
         line,
         font,
         11,
-        rightColX + columnWidth - lenderTextX,
+        footerTextRightLimit - lenderTextX,
       );
       for (const l of wrapped) {
         page.drawText(l, { x: lenderTextX, y: lenderTextY, size: 11, font });

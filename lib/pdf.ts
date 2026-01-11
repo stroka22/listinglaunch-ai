@@ -697,6 +697,18 @@ export async function generateOpenHouseFlyerPdf(
   );
 
   let dy = margin + 8;
+
+  // Temporary debug: show how many photos were loaded into the flyer.
+  const debugPhotosLine = `Photos loaded: ${photoImages.length}`;
+  page.drawText(debugPhotosLine, {
+    x: margin,
+    y: dy,
+    size: 7,
+    font,
+    color: rgb(0.4, 0.4, 0.4),
+  });
+  dy += 9;
+
   for (const line of disclaimerLines) {
     page.drawText(line, {
       x: margin,

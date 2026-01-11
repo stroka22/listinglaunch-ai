@@ -33,7 +33,8 @@ export default async function ListingHubPage({ params }: PageProps) {
       "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers",
     )
     .eq("slug", params.slug)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (error || !data) {
     return (

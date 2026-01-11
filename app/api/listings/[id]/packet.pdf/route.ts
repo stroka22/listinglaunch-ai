@@ -12,7 +12,7 @@ export async function GET(_request: NextRequest, context: any) {
     const { data, error } = await supabase
       .from("listings")
       .select(
-        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers",
+        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, archived, estated_raw, property, branding, ai_content, wizard_answers",
       )
       .eq("id", id)
       .single();
@@ -39,6 +39,7 @@ export async function GET(_request: NextRequest, context: any) {
       status: row.status,
       smsKeyword: row.sms_keyword,
       smsPhoneNumber: row.sms_phone_number,
+      archived: row.archived,
       estatedRaw: row.estated_raw,
       property: row.property,
       branding: row.branding,

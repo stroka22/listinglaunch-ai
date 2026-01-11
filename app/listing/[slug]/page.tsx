@@ -19,6 +19,9 @@ export default async function ListingHubPage({ params }: PageProps) {
     .single();
 
   if (error || !data) {
+    // Log for debugging 404s in production
+    // eslint-disable-next-line no-console
+    console.error("Listing hub not found", { slug: params.slug, error });
     notFound();
   }
 
@@ -52,6 +55,16 @@ export default async function ListingHubPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-zinc-500">Listing hub</div>
+        <a
+          href="/app"
+          className="rounded-full border border-zinc-300 px-3 py-1.5 text-[11px] text-zinc-700 hover:bg-zinc-100"
+        >
+          Agent sign in
+        </a>
+      </div>
+
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
         <div className="space-y-1">
           <p className="text-[11px] uppercase tracking-wide text-zinc-500">

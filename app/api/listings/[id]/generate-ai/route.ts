@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, context: any) {
     const { data, error } = await supabase
       .from("listings")
       .select(
-        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, credit_consumed, estated_raw, property, branding, wizard_answers, ai_content",
+        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, credit_consumed, archived, estated_raw, property, branding, wizard_answers, ai_content",
       )
       .eq("id", id)
       .single();
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest, context: any) {
       smsKeyword: row.sms_keyword,
       smsPhoneNumber: row.sms_phone_number,
       creditConsumed: row.credit_consumed,
+      archived: row.archived,
       estatedRaw: row.estated_raw,
       property: row.property,
       branding: row.branding,

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, _context: any) {
     const { data, error } = await supabase
       .from("listings")
       .select(
-        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers, disclosures",
+        "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, archived, estated_raw, property, branding, ai_content, wizard_answers, disclosures",
       )
       .eq("id", id)
       .single();

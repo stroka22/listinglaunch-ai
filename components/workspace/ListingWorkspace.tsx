@@ -101,6 +101,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           status: row.status,
           smsKeyword: row.sms_keyword,
           smsPhoneNumber: row.sms_phone_number,
+          archived: row.archived,
           estatedRaw: row.estated_raw,
           property: row.property,
           branding: row.branding,
@@ -216,12 +217,20 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           <h1 className="text-lg font-semibold tracking-tight">Listing workspace</h1>
           <p className="text-xs text-zinc-500">{addressLine}</p>
         </div>
-        <a
-          href={`/listing/${listing.slug}`}
-          className="rounded-full border border-zinc-300 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100"
-        >
-          View public hub
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="/app"
+            className="rounded-full border border-zinc-300 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100"
+          >
+            ← Back to dashboard
+          </a>
+          <a
+            href={`/listing/${listing.slug}`}
+            className="rounded-full border border-zinc-300 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100"
+          >
+            View public hub
+          </a>
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-2 text-xs">
         <button

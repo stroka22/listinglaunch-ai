@@ -43,6 +43,12 @@ execute function public.set_listings_updated_at();
 alter table if not exists public.listings
   add column if not exists credit_consumed boolean not null default false;
 
+-- Soft-archive listings so agents can hide old kits without deleting history
+alter table if not exists public.listings
+  add column if not exists archived boolean not null default false;
+
+create index if not exists listings_archived_idx on public.listings (archived);
+
 create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(),
   listing_id uuid not null references public.listings (id) on delete cascade,

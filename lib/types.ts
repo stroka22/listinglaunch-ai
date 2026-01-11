@@ -91,6 +91,7 @@ export interface Listing {
   smsKeyword: string | null;
   smsPhoneNumber: string | null;
   creditConsumed?: boolean;
+   archived?: boolean;
   estatedRaw: unknown | null;
   property: PropertySnapshot;
   branding?: {

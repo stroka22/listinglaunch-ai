@@ -55,9 +55,10 @@ export function Dashboard({ session }: DashboardProps) {
         const { data, error } = await supabase
           .from("listings")
           .select(
-            "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, credit_consumed, estated_raw, property, branding, ai_content, wizard_answers",
+            "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, credit_consumed, archived, estated_raw, property, branding, ai_content, wizard_answers",
           )
           .eq("agent_id", session.user.id)
+          .eq("archived", false)
           .order("created_at", { ascending: false });
 
         if (error) {
@@ -81,6 +82,7 @@ export function Dashboard({ session }: DashboardProps) {
           smsKeyword: row.sms_keyword,
           smsPhoneNumber: row.sms_phone_number,
           creditConsumed: row.credit_consumed,
+          archived: row.archived,
           estatedRaw: row.estated_raw,
           property: row.property,
           branding: row.branding,
@@ -319,6 +321,62 @@ export function Dashboard({ session }: DashboardProps) {
       });
     } catch {
       // No-op if clipboard is not available
+    }
+  }
+
+  async function handleArchiveListing(listingId: string) {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("listings")
+        .update({ archived: true })
+        .eq("id", listingId)
+        .eq("agent_id", session.user.id);
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      setListings((prev) => prev.filter((l) => l.id !== listingId));
+      setLeadCounts((prev) => {
+        const { [listingId]: _removed, ...rest } = prev;
+        return rest;
+      });
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to archive listing");
+    }
+  }
+
+  async function handleDeleteListing(listingId: string) {
+    if (
+      !window.confirm(
+        "Delete this listing permanently? This will remove its leads and cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("listings")
+        .delete()
+        .eq("id", listingId)
+        .eq("agent_id", session.user.id);
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      setListings((prev) => prev.filter((l) => l.id !== listingId));
+      setLeadCounts((prev) => {
+        const { [listingId]: _removed, ...rest } = prev;
+        return rest;
+      });
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to delete listing");
     }
   }
 
@@ -721,6 +779,22 @@ export function Dashboard({ session }: DashboardProps) {
                         >
                           Co-branded flyer
                         </a>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-zinc-500">
+                        <button
+                          type="button"
+                          onClick={() => handleArchiveListing(listing.id)}
+                          className="rounded-full border border-zinc-300 px-2 py-0.5 hover:bg-zinc-100"
+                        >
+                          Archive
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteListing(listing.id)}
+                          className="rounded-full border border-red-200 px-2 py-0.5 text-red-700 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>

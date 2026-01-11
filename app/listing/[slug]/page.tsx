@@ -31,7 +31,7 @@ export default function ListingHubPage() {
         const { data, error } = await supabase
           .from("listings")
           .select(
-            "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers",
+            "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, estated_raw, property, branding, ai_content, wizard_answers, photos",
           )
           .eq("slug", decodedSlug)
           .limit(1)
@@ -64,6 +64,7 @@ export default function ListingHubPage() {
           status: row.status,
           smsKeyword: row.sms_keyword,
           smsPhoneNumber: row.sms_phone_number,
+          photos: row.photos ?? null,
           estatedRaw: row.estated_raw,
           property: row.property,
           branding: row.branding,

@@ -55,7 +55,7 @@ export function Dashboard({ session }: DashboardProps) {
         const { data, error } = await supabase
           .from("listings")
           .select(
-            "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, credit_consumed, archived, estated_raw, property, branding, ai_content, wizard_answers",
+            "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, sms_keyword, sms_phone_number, credit_consumed, archived, estated_raw, property, branding, ai_content, wizard_answers, photos",
           )
           .eq("agent_id", session.user.id)
           .eq("archived", false)
@@ -83,6 +83,7 @@ export function Dashboard({ session }: DashboardProps) {
           smsPhoneNumber: row.sms_phone_number,
           creditConsumed: row.credit_consumed,
           archived: row.archived,
+          photos: row.photos ?? null,
           estatedRaw: row.estated_raw,
           property: row.property,
           branding: row.branding,

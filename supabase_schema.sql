@@ -47,6 +47,10 @@ alter table if not exists public.listings
 alter table if not exists public.listings
   add column if not exists archived boolean not null default false;
 
+-- Store public URLs for property photos used in flyers and marketing assets
+alter table if not exists public.listings
+  add column if not exists photos text[];
+
 create index if not exists listings_archived_idx on public.listings (archived);
 
 create table if not exists public.leads (

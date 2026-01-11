@@ -92,6 +92,7 @@ export interface Listing {
   smsPhoneNumber: string | null;
   creditConsumed?: boolean;
    archived?: boolean;
+  photos?: string[] | null;
   estatedRaw: unknown | null;
   property: PropertySnapshot;
   branding?: {

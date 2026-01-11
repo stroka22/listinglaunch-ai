@@ -64,6 +64,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
   const [openHouseError, setOpenHouseError] = useState<string | null>(null);
   const [openHouseSaved, setOpenHouseSaved] = useState(false);
 
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -107,6 +110,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           smsKeyword: row.sms_keyword,
           smsPhoneNumber: row.sms_phone_number,
           archived: row.archived,
+          photos: row.photos ?? null,
           estatedRaw: row.estated_raw,
           property: row.property,
           branding: row.branding,
@@ -234,6 +238,69 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
       setOpenHouseError(err?.message ?? "Could not save open house details");
     } finally {
       setOpenHouseSaving(false);
+    }
+  }
+
+  async function handlePhotoUpload(e: any) {
+    if (!listing) return;
+    const file: File | undefined = e.target?.files?.[0];
+    if (!file) return;
+    setPhotoUploading(true);
+    setPhotoError(null);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `listings/${listing.id}/photo-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("branding-assets")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("branding-assets").getPublicUrl(path);
+
+      const nextPhotos = [...(listing.photos ?? []), publicUrl];
+
+      const { error: updateError } = await supabase
+        .from("listings")
+        .update({ photos: nextPhotos })
+        .eq("id", listing.id);
+
+      if (updateError) throw updateError;
+
+      setListing((prev) =>
+        prev ? ({ ...prev, photos: nextPhotos } as Listing) : prev,
+      );
+    } catch (err: any) {
+      setPhotoError(err?.message ?? "Could not upload photo");
+    } finally {
+      setPhotoUploading(false);
+      if (e.target) {
+        e.target.value = "";
+      }
+    }
+  }
+
+  async function handleRemovePhoto(url: string) {
+    if (!listing) return;
+    const nextPhotos = (listing.photos ?? []).filter((p) => p !== url);
+    setPhotoError(null);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("listings")
+        .update({ photos: nextPhotos })
+        .eq("id", listing.id);
+      if (error) throw error;
+      setListing((prev) =>
+        prev ? ({ ...prev, photos: nextPhotos } as Listing) : prev,
+      );
+    } catch (err: any) {
+      setPhotoError(err?.message ?? "Could not remove photo");
     }
   }
 
@@ -509,6 +576,61 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
             {openHouseError && (
               <p className="text-[11px] text-red-600">{openHouseError}</p>
+            )}
+          </section>
+
+          <section className="mt-4 space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold text-zinc-800">Property photos</h2>
+              <span className="text-[10px] text-zinc-500">
+                Used on the open house flyer (first 3 photos)
+              </span>
+            </div>
+
+            <p className="text-[11px] text-zinc-600">
+              Upload a few of your best listing photos. The first three will be
+              shown on the flyer.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-zinc-300 px-3 py-1.5 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                  disabled={photoUploading}
+                />
+                {photoUploading ? "Uploading…" : "Upload photo"}
+              </label>
+
+              {photoError && (
+                <span className="text-[11px] text-red-600">{photoError}</span>
+              )}
+            </div>
+
+            {listing.photos && listing.photos.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {listing.photos.map((url) => (
+                  <div
+                    key={url}
+                    className="flex flex-col items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 p-1"
+                  >
+                    <img
+                      src={url}
+                      alt="Listing"
+                      className="h-20 w-28 rounded object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(url)}
+                      className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </section>
         </>

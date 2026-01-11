@@ -398,6 +398,15 @@ export async function generateOpenHouseFlyerPdf(
     mortgagePartner?.headshotUrl ?? null,
   );
 
+  const photoUrls: string[] = Array.isArray((listing as any).photos)
+    ? ((listing as any).photos as string[])
+    : [];
+  const photoImages = [] as any[];
+  for (const url of photoUrls.slice(0, 3)) {
+    const img = await loadImageForPdf(pdfDoc, url);
+    if (img) photoImages.push(img);
+  }
+
   const page = pdfDoc.addPage();
   const { width, height } = page.getSize();
   const margin = 40;
@@ -467,6 +476,37 @@ export async function generateOpenHouseFlyerPdf(
       });
       y -= 18;
     }
+  }
+
+  if (photoImages.length > 0) {
+    const bandHeight = 140;
+    const gap = 8;
+    const count = photoImages.length;
+    const totalGap = gap * (count - 1);
+    const availableWidth = width - margin * 2 - totalGap;
+    const cellWidth = availableWidth / count;
+    const bandBottom = y - bandHeight;
+
+    photoImages.forEach((img, index) => {
+      const scale = Math.min(
+        cellWidth / img.width,
+        bandHeight / img.height,
+      );
+      const drawWidth = img.width * scale;
+      const drawHeight = img.height * scale;
+      const cellX = margin + index * (cellWidth + gap);
+      const x = cellX + (cellWidth - drawWidth) / 2;
+      const yImg = bandBottom + (bandHeight - drawHeight) / 2;
+
+      page.drawImage(img, {
+        x,
+        y: yImg,
+        width: drawWidth,
+        height: drawHeight,
+      });
+    });
+
+    y = bandBottom - 20;
   }
 
   const p = listing.property;

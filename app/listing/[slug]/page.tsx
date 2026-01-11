@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import type { Listing } from "@/lib/types";
 import { LeadForm } from "@/components/listing/LeadForm";
 
@@ -8,7 +8,21 @@ interface PageProps {
 }
 
 export default async function ListingHubPage({ params }: PageProps) {
-  const supabase = getSupabaseServerClient();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    // eslint-disable-next-line no-console
+    console.error("Listing hub Supabase env missing", {
+      hasUrl: !!url,
+      hasAnon: !!anonKey,
+    });
+    notFound();
+  }
+
+  const supabase = createClient(url, anonKey, {
+    auth: { persistSession: false },
+  });
 
   const { data, error } = await supabase
     .from("listings")

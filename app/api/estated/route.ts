@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       snapshot: result.snapshot,
       raw: result.raw,
+      schoolsRaw: result.schoolsRaw ?? null,
       warnings: result.warnings,
     });
   } catch (err: any) {

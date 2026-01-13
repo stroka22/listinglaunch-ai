@@ -10,6 +10,8 @@ export interface EstatedLookupInput {
 export interface EstatedLookupResult {
   snapshot: PropertySnapshot;
   raw: unknown;
+  // Optional extra payloads from secondary ATTOM endpoints (e.g. schools)
+  schoolsRaw?: unknown;
   warnings: string[];
 }
 
@@ -69,6 +71,8 @@ export async function lookupPropertyFromEstated(
 
   const json = (await res.json()) as any;
 
+  const warnings: string[] = [];
+
   const list = Array.isArray(json.property) ? json.property : [];
   if (!list.length) {
     throw new Error("ATTOM did not return any property records for this address.");
@@ -108,10 +112,46 @@ export async function lookupPropertyFromEstated(
     annualTaxes: makeField(annualTaxes),
   };
 
+  // Optionally call ATTOM's detail-with-schools endpoint using the ATTOM ID (if present)
+  let schoolsRaw: unknown = null;
+  const attomId: string | number | undefined =
+    (identifier.attomId as string | number | undefined) ??
+    (identifier.attomid as string | number | undefined) ??
+    (identifier.attom_id as string | number | undefined);
+
+  if (attomId != null) {
+    try {
+      const schoolsUrl =
+        `https://api.gateway.attomdata.com/propertyapi/v1.0.0/property/detailwithschools?attomid=${encodeURIComponent(String(attomId))}`;
+
+      const schoolsRes = await fetch(schoolsUrl, {
+        method: "GET",
+        headers: {
+          apikey: apiKey,
+          accept: "application/json",
+        },
+      });
+
+      if (schoolsRes.ok) {
+        schoolsRaw = (await schoolsRes.json()) as any;
+      } else {
+        const schoolsText = await schoolsRes.text().catch(() => "");
+        warnings.push(
+          `ATTOM detailwithschools lookup failed: ${schoolsRes.status} ${schoolsRes.statusText}${schoolsText ? " – see ATTOM logs for details" : ""}`,
+        );
+      }
+    } catch {
+      warnings.push(
+        "ATTOM detailwithschools lookup threw an error; school information was not auto-filled.",
+      );
+    }
+  }
+
   return {
     snapshot,
     raw: json,
-    warnings: [],
+    schoolsRaw,
+    warnings,
   };
 }
 
@@ -131,6 +171,8 @@ export function deriveSmartWizardDefaultsFromRaw(
   const parking = building.parking ?? {};
   const lot = property.lot ?? {};
   const buildingSummary = building.summary ?? {};
+  const assessment = property.assessment ?? {};
+  const association = property.association ?? assessment.association ?? {};
 
   const yearBuilt: number | undefined = summary.yearBuilt;
 
@@ -155,6 +197,31 @@ export function deriveSmartWizardDefaultsFromRaw(
     result.hvac_type_age = `${hvacParts.join(", ")} (per public record; buyer to verify).`;
   }
 
+  // Water / sewer convenience string where ATTOM exposes utility providers
+  const water:
+    | string
+    | undefined =
+    utilities.waterType ??
+    utilities.water ??
+    utilities.wtrSup ??
+    utilities.waterSource ??
+    utilities.waterSupply;
+  const sewer:
+    | string
+    | undefined =
+    utilities.sewerType ??
+    utilities.sewer ??
+    utilities.swrSup ??
+    utilities.sewerSource ??
+    utilities.sewerSupply;
+
+  const waterSewerParts: string[] = [];
+  if (water) waterSewerParts.push(`Water: ${water}`);
+  if (sewer) waterSewerParts.push(`Sewer: ${sewer}`);
+  if (waterSewerParts.length) {
+    result.water_sewer = `${waterSewerParts.join("; ")} (per public record; buyer to verify with utility providers).`;
+  }
+
   const floors: string | undefined = interior.floors;
   if (floors) {
     result.flooring = `${floors} flooring (per public record; buyer to verify rooms and coverage).`;
@@ -173,6 +240,43 @@ export function deriveSmartWizardDefaultsFromRaw(
     result.pool_waterfront_garage = `${exteriorParts.join("; ")} (buyer to verify).`;
   }
 
+  // HOA / community summary from association data if available
+  const assocName: string | undefined =
+    (association.name as string | undefined) ??
+    (association.assocName as string | undefined) ??
+    (association.associationName as string | undefined) ??
+    (association.hoaName as string | undefined);
+
+  const assocFees: number | string | undefined =
+    (association.assocFees as number | string | undefined) ??
+    (association.fees as number | string | undefined) ??
+    (association.associationFee as number | string | undefined) ??
+    (association.hoaFee as number | string | undefined);
+
+  const assocFeesFreq: string | undefined =
+    (association.assocFeesFreq as string | undefined) ??
+    (association.feeFrequency as string | undefined) ??
+    (association.associationFeeFrequency as string | undefined) ??
+    (association.hoaFeeFreq as string | undefined);
+
+  const hoaParts: string[] = [];
+  if (assocName) hoaParts.push(`HOA/Condo: ${assocName}`);
+  if (assocFees != null && `${assocFees}`.trim() !== "") {
+    const amt =
+      typeof assocFees === "number"
+        ? assocFees.toLocaleString()
+        : String(assocFees);
+    if (assocFeesFreq) {
+      hoaParts.push(`Fees: $${amt} (${assocFeesFreq})`);
+    } else {
+      hoaParts.push(`Fees: $${amt}`);
+    }
+  }
+
+  if (hoaParts.length) {
+    result.hoa_fees_amenities = `${hoaParts.join("; ")} (per public record/association; buyer to verify).`;
+  }
+
   return result;
 }
 
@@ -185,6 +289,12 @@ export interface AttomExtendedFields {
   stories: string | null;
   taxYear: number | null;
   homesteadExemption: string | null;
+   parkingSpaces: number | null;
+   parkingType: string | null;
+   lotFeatures: string | null;
+   hoaName: string | null;
+   hoaFeeAmount: number | null;
+   hoaFeeFrequency: string | null;
 }
 
 export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
@@ -197,6 +307,12 @@ export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
     stories: null,
     taxYear: null,
     homesteadExemption: null,
+    parkingSpaces: null,
+    parkingType: null,
+    lotFeatures: null,
+    hoaName: null,
+    hoaFeeAmount: null,
+    hoaFeeFrequency: null,
   };
 
   const data = raw as any;
@@ -208,9 +324,11 @@ export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
   const location = property.location ?? {};
   const building = property.building ?? {};
   const size = building.size ?? building.area ?? {};
+   const parking = building.parking ?? {};
   const tax = property.tax ?? {};
   const assessment = property.assessment ?? {};
   const assessmentTax = assessment.tax ?? {};
+   const association = property.association ?? {};
 
   const result: AttomExtendedFields = { ...base };
 
@@ -265,7 +383,126 @@ export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
     result.homesteadExemption = String(homestead);
   }
 
+   // Parking
+   const prkgSpaces = parking.prkgSpaces as number | string | undefined;
+   if (prkgSpaces != null && `${prkgSpaces}`.trim() !== "") {
+     const numeric =
+       typeof prkgSpaces === "number" ? prkgSpaces : Number(prkgSpaces);
+     if (Number.isFinite(numeric)) {
+       result.parkingSpaces = numeric as number;
+     }
+   }
+
+   result.parkingType =
+     (parking.prkgType as string | undefined) ??
+     (parking.parkingType as string | undefined) ??
+     (parking.type as string | undefined) ??
+     null;
+
+   // Lot features / site description
+   result.lotFeatures =
+     (lot.lotType as string | undefined) ??
+     (lot.lotDescription as string | undefined) ??
+     (lot.siteType as string | undefined) ??
+     (lot.siteDesc as string | undefined) ??
+     null;
+
+   // HOA basics
+   result.hoaName =
+     (association.name as string | undefined) ??
+     (association.assocName as string | undefined) ??
+     (association.associationName as string | undefined) ??
+     (association.hoaName as string | undefined) ??
+     null;
+
+   const hoaFees =
+     (association.assocFees as number | string | undefined) ??
+     (association.fees as number | string | undefined) ??
+     (association.associationFee as number | string | undefined) ??
+     (association.hoaFee as number | string | undefined) ??
+     null;
+   if (hoaFees != null && `${hoaFees}`.trim() !== "") {
+     const numeric =
+       typeof hoaFees === "number" ? hoaFees : Number(hoaFees);
+     if (Number.isFinite(numeric)) {
+       result.hoaFeeAmount = numeric as number;
+     }
+   }
+
+   result.hoaFeeFrequency =
+     (association.assocFeesFreq as string | undefined) ??
+     (association.feeFrequency as string | undefined) ??
+     (association.associationFeeFrequency as string | undefined) ??
+     (association.hoaFeeFreq as string | undefined) ??
+     null;
+
   return result;
+}
+
+export interface AttomSchoolsSummary {
+  elementary: string | null;
+  middle: string | null;
+  high: string | null;
+}
+
+// Very lightweight heuristic parser that walks the ATTOM schools payload and
+// pulls out up to one elementary, middle, and high school by name. We avoid
+// depending on any specific schema so this works across basic/expanded
+// responses and future ATTOM versions.
+export function deriveSchoolsFromRawSchools(raw: unknown): AttomSchoolsSummary {
+  const summary: AttomSchoolsSummary = {
+    elementary: null,
+    middle: null,
+    high: null,
+  };
+
+  if (!raw || typeof raw !== "object") return summary;
+
+  const visited = new Set<any>();
+
+  function visit(node: any): void {
+    if (!node || typeof node !== "object" || visited.has(node)) return;
+    visited.add(node);
+
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+
+    for (const [key, value] of Object.entries(node)) {
+      if (value && typeof value === "object") {
+        visit(value);
+        continue;
+      }
+
+      if (typeof value === "string") {
+        const keyLower = key.toLowerCase();
+        const val = value.trim();
+        const valLower = val.toLowerCase();
+
+        const looksLikeSchoolName =
+          keyLower.includes("school") || keyLower.includes("name");
+
+        if (looksLikeSchoolName && /school/.test(valLower)) {
+          if (!summary.elementary && /elementary/i.test(val)) {
+            summary.elementary = val;
+            continue;
+          }
+          if (!summary.middle && /middle/i.test(val)) {
+            summary.middle = val;
+            continue;
+          }
+          if (!summary.high && /high/i.test(val)) {
+            summary.high = val;
+            continue;
+          }
+        }
+      }
+    }
+  }
+
+  visit(raw as any);
+  return summary;
 }
 
 

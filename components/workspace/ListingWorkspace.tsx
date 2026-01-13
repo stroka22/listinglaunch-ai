@@ -1064,7 +1064,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 Lot size: {listing.property.lotSizeSqFt.value ?? "—"} sq ft (Public record)
               </p>
               <p className="text-[11px] text-zinc-600">
-                Stories / levels: <span className="text-zinc-500">— (agent to enter)</span>
+                Stories / levels: {attomExt.stories ?? <span className="text-zinc-500">— (agent to enter)</span>}
               </p>
               <p className="text-[11px] text-zinc-600">
                 Ceiling height: <span className="text-zinc-500">— (if applicable)</span>
@@ -1116,10 +1116,24 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 Pool / waterfront / view: {answers.pool_waterfront_garage || "— (from smart question)"}
               </p>
               <p className="text-[11px] text-zinc-600">
-                Lot features: <span className="text-zinc-500">— (agent to enter)</span>
+                Lot features: {attomExt.lotFeatures ?? <span className="text-zinc-500">— (agent to enter)</span>}
               </p>
               <p className="text-[11px] text-zinc-600">
-                Parking / garage / carport: <span className="text-zinc-500">— (agent to enter)</span>
+                Parking / garage / carport: {attomExt.parkingSpaces != null || attomExt.parkingType ? (
+                  <>
+                    {attomExt.parkingSpaces != null && (
+                      <>
+                        {attomExt.parkingSpaces} spaces
+                        {attomExt.parkingType ? " • " : ""}
+                      </>
+                    )}
+                    {attomExt.parkingType ?? ""}
+                    {" "}
+                    <span className="text-zinc-500">(public record – verify)</span>
+                  </>
+                ) : (
+                  <span className="text-zinc-500">— (agent to enter)</span>
+                )}
               </p>
             </div>
 
@@ -1149,10 +1163,25 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 HOA / condo summary: {answers.hoa_fees_amenities || "— (fees & amenities from smart question)"}
               </p>
               <p className="text-[11px] text-zinc-600">
-                HOA exists / name: <span className="text-zinc-500">— (agent to enter)</span>
+                HOA exists / name: {attomExt.hoaName ? (
+                  <>
+                    {attomExt.hoaName}{" "}
+                    <span className="text-zinc-500">(public record – verify)</span>
+                  </>
+                ) : (
+                  <span className="text-zinc-500">— (agent to enter)</span>
+                )}
               </p>
               <p className="text-[11px] text-zinc-600">
-                HOA fee amount / frequency: <span className="text-zinc-500">— (agent to enter)</span>
+                HOA fee amount / frequency: {attomExt.hoaFeeAmount != null ? (
+                  <>
+                    ${attomExt.hoaFeeAmount.toLocaleString()}
+                    {attomExt.hoaFeeFrequency ? ` (${attomExt.hoaFeeFrequency})` : ""}
+                    <span className="text-zinc-500"> (public record – verify)</span>
+                  </>
+                ) : (
+                  <span className="text-zinc-500">— (agent to enter)</span>
+                )}
               </p>
               <p className="text-[11px] text-zinc-600">
                 CDD / condo association: <span className="text-zinc-500">— (agent to enter)</span>
@@ -1194,10 +1223,17 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 Flood zone / FEMA panel: <span className="text-zinc-500">— (agent to enter)</span>
               </p>
               <p className="text-[11px] text-zinc-600">
-                Schools (elem/middle/high): <span className="text-zinc-500">— (agent to enter)</span>
+                Schools (elem/middle/high): {answers.schools_summary || <span className="text-zinc-500">— (agent to enter)</span>}
               </p>
               <p className="text-[11px] text-zinc-600">
-                Township / community name: <span className="text-zinc-500">— (agent to enter)</span>
+                Township / community name: {attomExt.subdivision ? (
+                  <>
+                    {attomExt.subdivision}{" "}
+                    <span className="text-zinc-500">(public record – verify)</span>
+                  </>
+                ) : (
+                  <span className="text-zinc-500">— (agent to enter)</span>
+                )}
               </p>
             </div>
 

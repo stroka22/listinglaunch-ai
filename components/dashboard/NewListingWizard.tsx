@@ -9,7 +9,10 @@ import type {
   PropertySnapshot,
 } from "@/lib/types";
 import { SMART_QUESTIONS } from "@/lib/questions";
-import { deriveSmartWizardDefaultsFromRaw } from "@/lib/estated";
+import {
+  deriveSmartWizardDefaultsFromRaw,
+  deriveSchoolsFromRawSchools,
+} from "@/lib/estated";
 
 interface NewListingWizardProps {
   agentId: string;
@@ -197,6 +200,7 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
       const json = (await res.json()) as {
         snapshot: PropertySnapshot;
         raw: unknown;
+        schoolsRaw: unknown | null;
         warnings: string[];
       };
 
@@ -205,6 +209,29 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
       setEstatedWarnings(json.warnings ?? []);
 
       const defaults = deriveSmartWizardDefaultsFromRaw(json.raw);
+
+      const schoolSummary = deriveSchoolsFromRawSchools(
+        json.schoolsRaw ?? null,
+      );
+      if (
+        schoolSummary.elementary ||
+        schoolSummary.middle ||
+        schoolSummary.high
+      ) {
+        const parts: string[] = [];
+        if (schoolSummary.elementary) {
+          parts.push(`Elem: ${schoolSummary.elementary}`);
+        }
+        if (schoolSummary.middle) {
+          parts.push(`Middle: ${schoolSummary.middle}`);
+        }
+        if (schoolSummary.high) {
+          parts.push(`High: ${schoolSummary.high}`);
+        }
+
+        defaults.schools_summary = `${parts.join(" | ")} (per ATTOM schools; buyer to verify with district).`;
+      }
+
       if (Object.keys(defaults).length > 0) {
         setAnswers((prev) => ({
           ...defaults,

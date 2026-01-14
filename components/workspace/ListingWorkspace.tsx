@@ -465,6 +465,34 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
   const attomExt = deriveExtendedFieldsFromRaw(listing.estatedRaw ?? null);
 
+  // Best-effort mapping from ATTOM county to the correct Florida property appraiser site.
+  const countyKey = (attomExt.county ?? "")
+    .toLowerCase()
+    .replace(" county", "")
+    .trim();
+
+  const flAppraisers: Record<string, string> = {
+    hillsborough: "https://www.hcpafl.org",
+    pasco: "https://search.pascopa.com/propertysearch",
+    pinellas: "https://www.pcpao.gov",
+    polk: "https://www.polkpa.org",
+    hernando: "https://www.hernandocounty.us/departments/departments-a-e/property-appraiser",
+    citrus: "https://www.citruspa.org",
+    manatee: "https://www.manateepao.com",
+    sarasota: "https://www.sc-pa.com",
+    orange: "https://www.ocpafl.org",
+    seminole: "https://www.scpafl.org",
+    lake: "https://www.lakecopropappr.com",
+    marion: "https://www.pa.marion.fl.us",
+  };
+
+  const propertyAppraiserUrl =
+    listing.state.toUpperCase() === "FL" && countyKey && flAppraisers[countyKey]
+      ? flAppraisers[countyKey]
+      : `https://www.google.com/search?q=${encodeURIComponent(
+          addressLine + " property appraiser",
+        )}`;
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -927,9 +955,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
           <div className="flex flex-wrap gap-2 text-[10px] text-zinc-500">
             <a
-              href={`https://www.google.com/search?q=${encodeURIComponent(
-                addressLine + " property appraiser",
-              )}`}
+              href={propertyAppraiserUrl}
               target="_blank"
               rel="noreferrer noopener"
               className="underline"

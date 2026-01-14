@@ -123,7 +123,7 @@ export default function ListingHubPage() {
           href="/app"
           className="rounded-full border border-zinc-300 px-3 py-1.5 text-[11px] text-zinc-700 hover:bg-zinc-100"
         >
-          Agent sign in
+          ← Back to agent dashboard
         </a>
       </div>
 

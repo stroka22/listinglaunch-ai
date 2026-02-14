@@ -376,6 +376,24 @@ export function Dashboard({ session }: DashboardProps) {
     }
   }
 
+  function describeCreditHistoryEntry(entry: AgentCreditLedgerEntry): string {
+    if (entry.reason === "purchase") {
+      return "Credits purchased (Stripe checkout)";
+    }
+    if (entry.reason === "test_purchase") {
+      return "Test credits added (no charge)";
+    }
+    if (entry.reason === "listing_consume") {
+      const listing = listings.find((l) => l.id === entry.listingId);
+      const label = listing
+        ? `${listing.street}, ${listing.city}`
+        : entry.listingId ?? "Listing";
+      const credits = Math.abs(entry.delta);
+      return `${credits} credit${credits === 1 ? "" : "s"} used for ${label}`;
+    }
+    return entry.reason;
+  }
+
   function copyToClipboard(text: string) {
     if (!text) return;
     try {
@@ -776,6 +794,7 @@ export function Dashboard({ session }: DashboardProps) {
                 <tr className="text-left text-[11px] uppercase tracking-wide text-zinc-500">
                   <th className="px-3 py-2">Address</th>
                   <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Credit</th>
                   <th className="px-3 py-2">Created</th>
                   <th className="px-3 py-2">SMS Keyword</th>
                   <th className="px-3 py-2">Leads</th>
@@ -798,6 +817,17 @@ export function Dashboard({ session }: DashboardProps) {
                     </td>
                     <td className="px-3 py-2 align-top text-[11px] capitalize text-zinc-600">
                       {listing.status}
+                    </td>
+                    <td className="px-3 py-2 align-top text-[11px]">
+                      {listing.creditConsumed ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          Credit used
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                          Needs credit
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2 align-top text-[11px] text-zinc-500">
                       {new Date(listing.createdAt).toLocaleDateString()}
@@ -1019,7 +1049,7 @@ export function Dashboard({ session }: DashboardProps) {
                           </span>
                         </td>
                         <td className="px-3 py-1.5 text-[11px] text-zinc-600">
-                          {entry.reason}
+                          {describeCreditHistoryEntry(entry)}
                         </td>
                       </tr>
                     ))}

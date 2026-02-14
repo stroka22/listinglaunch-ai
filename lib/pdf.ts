@@ -444,7 +444,7 @@ export async function generateListingPacketPdf(
 
       for (const q of activeQuestions) {
         const raw = disclosures.answers[q.id];
-        let answer = "Not answered (seller/agent to complete)";
+        let answer = "⚠ NOT ANSWERED (seller/agent to complete)";
         if (raw === "yes") answer = "Yes";
         else if (raw === "no") answer = "No";
         else if (raw === "unknown") answer = "Unknown";

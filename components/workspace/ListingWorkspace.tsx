@@ -152,6 +152,11 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
   }, [listingId]);
 
   const questions = disclosures ? packagesForQuestion(disclosures.metadata) : [];
+  const totalDisclosureQuestions = questions.length;
+  const answeredDisclosureQuestions =
+    disclosures && totalDisclosureQuestions > 0
+      ? questions.filter((q) => !!disclosures.answers[q.id]).length
+      : 0;
 
   async function handleSaveDisclosures() {
     if (!listing || !disclosures) return;
@@ -1353,6 +1358,17 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             </span>
           </div>
 
+          {disclosures && totalDisclosureQuestions > 0 && (
+            <div className="text-[10px] text-zinc-600">
+              {answeredDisclosureQuestions}/{totalDisclosureQuestions} questions answered
+              {answeredDisclosureQuestions < totalDisclosureQuestions && (
+                <span className="ml-1 font-medium text-amber-700">
+                  ({totalDisclosureQuestions - answeredDisclosureQuestions} remaining)
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-2 md:grid-cols-3">
             <div className="space-y-1">
               <label className="block text-[11px] font-medium text-zinc-700">
@@ -1447,10 +1463,23 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   return updateDisclosureAnswer(prev, q.id, value as DisclosureAnswer);
                 });
               };
+              const isUnanswered = !current;
               return (
-                <div key={q.id} className="space-y-1">
-                  <div className="text-[11px] font-medium text-zinc-700">
-                    {q.label}
+                <div
+                  key={q.id}
+                  className={`space-y-1 rounded-md border px-2 py-1 ${
+                    isUnanswered ? "border-amber-300 bg-amber-50" : "border-zinc-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[11px] font-medium text-zinc-700">
+                      {q.label}
+                    </div>
+                    {isUnanswered && (
+                      <span className="text-[10px] font-semibold text-amber-700">
+                        Not answered
+                      </span>
+                    )}
                   </div>
                   {q.helper && (
                     <p className="text-[10px] text-zinc-500">{q.helper}</p>

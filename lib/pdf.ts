@@ -4,9 +4,11 @@ import type {
   AgentProfile,
   Listing,
   ListingAiContent,
+  ListingDisclosures,
   MortgagePartnerProfile,
   PropertyField,
 } from "@/lib/types";
+import { packagesForQuestion } from "@/lib/disclosures_fl";
 
 async function loadImageForPdf(pdfDoc: PDFDocument, url: string | null) {
   if (!url) return null;
@@ -360,6 +362,122 @@ export async function generateListingPacketPdf(
       color: rgb(0.25, 0.25, 0.25),
     });
     bry -= 10;
+  }
+
+  const disclosures: ListingDisclosures | null =
+    (listing as any).disclosures ?? null;
+
+  if (disclosures) {
+    const disclosuresPage = pdfDoc.addPage();
+    const { width: dw, height: dh } = disclosuresPage.getSize();
+    let dy = dh - margin;
+
+    disclosuresPage.drawText("Florida Disclosures (Summary)", {
+      x: margin,
+      y: dy - 24,
+      size: 16,
+      font: boldFont,
+    });
+    dy -= 24 + 10;
+
+    const metaLines: string[] = [];
+    if (disclosures.metadata.occupancyStatus) {
+      const label =
+        disclosures.metadata.occupancyStatus === "owner"
+          ? "Owner-occupied"
+          : disclosures.metadata.occupancyStatus === "tenant"
+            ? "Tenant-occupied"
+            : "Vacant";
+      metaLines.push(`Occupancy status: ${label}`);
+    }
+    if (disclosures.metadata.hoaOrCondo) {
+      const label =
+        disclosures.metadata.hoaOrCondo === "none"
+          ? "No HOA / Condo"
+          : disclosures.metadata.hoaOrCondo === "hoa"
+            ? "HOA only"
+            : disclosures.metadata.hoaOrCondo === "condo"
+              ? "Condo association"
+              : "Both HOA and Condo";
+      metaLines.push(`HOA / Condo presence: ${label}`);
+    }
+    if (disclosures.metadata.sellerType) {
+      const label =
+        disclosures.metadata.sellerType === "individual"
+          ? "Individual"
+          : disclosures.metadata.sellerType === "estate"
+            ? "Estate"
+            : disclosures.metadata.sellerType === "trust"
+              ? "Trust"
+              : "LLC / Company";
+      metaLines.push(`Seller type: ${label}`);
+    }
+    if (disclosures.metadata.yearBuilt != null) {
+      metaLines.push(`Year built (for context): ${disclosures.metadata.yearBuilt}`);
+    }
+    if (disclosures.metadata.propertyType) {
+      metaLines.push(`Property type (for context): ${disclosures.metadata.propertyType}`);
+    }
+
+    for (const line of metaLines) {
+      const wrapped = wrapText(line, font, 10, dw - margin * 2);
+      for (const l of wrapped) {
+        disclosuresPage.drawText(l, { x: margin, y: dy, size: 10, font });
+        dy -= 14;
+      }
+    }
+
+    if (metaLines.length > 0) {
+      dy -= 10;
+    }
+
+    const activeQuestions = packagesForQuestion(disclosures.metadata);
+
+    if (activeQuestions.length > 0) {
+      disclosuresPage.drawText("Seller / Agent Responses", {
+        x: margin,
+        y: dy,
+        size: 12,
+        font: boldFont,
+      });
+      dy -= 18;
+
+      for (const q of activeQuestions) {
+        const raw = disclosures.answers[q.id];
+        let answer = "Not answered (seller/agent to complete)";
+        if (raw === "yes") answer = "Yes";
+        else if (raw === "no") answer = "No";
+        else if (raw === "unknown") answer = "Unknown";
+
+        const combined = `• ${q.label} — ${answer}`;
+        const wrapped = wrapText(combined, font, 9, dw - margin * 2);
+        for (const l of wrapped) {
+          disclosuresPage.drawText(l, {
+            x: margin,
+            y: dy,
+            size: 9,
+            font,
+          });
+          dy -= 12;
+        }
+      }
+
+      dy -= 10;
+    }
+
+    const advisory =
+      "This summary reflects seller/agent-provided answers captured in the ListingLaunch AI workspace. It is for MLS preparation only and does not replace Florida Realtors®/Florida BAR disclosure forms or legal advice.";
+    const advisoryLines = wrapText(advisory, font, 8, dw - margin * 2);
+    for (const line of advisoryLines) {
+      disclosuresPage.drawText(line, {
+        x: margin,
+        y: dy,
+        size: 8,
+        font,
+        color: rgb(0.25, 0.25, 0.25),
+      });
+      dy -= 10;
+    }
   }
 
   const bytes = await pdfDoc.save();

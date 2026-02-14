@@ -46,32 +46,68 @@ export async function lookupPropertyFromEstated(
     // ZIP is typically inferred; including it here can sometimes cause no matches.
     address2: `${input.city}, ${input.state}`,
   });
+  const warnings: string[] = [];
 
-  const url = `https://api.gateway.attomdata.com/propertyapi/v1.0.0/property/basicprofile?${params.toString()}`;
+  async function fetchProfile(endpoint: "expandedprofile" | "basicprofile") {
+    const url = `https://api.gateway.attomdata.com/propertyapi/v1.0.0/property/${endpoint}?${params.toString()}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        apikey: apiKey as string,
+        accept: "application/json",
+      },
+    });
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      apikey: apiKey,
-      accept: "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    if (res.status === 401 || res.status === 403) {
-      throw new Error(
-        "ATTOM Property API unauthorized. Check that your API key is correct and has access to the Property API.",
-      );
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return {
+        ok: false as const,
+        status: res.status,
+        statusText: res.statusText,
+        body: text,
+      };
     }
-    throw new Error(
-      `ATTOM Property API error: ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`,
-    );
+
+    const json = (await res.json()) as any;
+    return { ok: true as const, json };
   }
 
-  const json = (await res.json()) as any;
+  // Prefer expandedprofile for richer MLS auto-fill, but gracefully fall back
+  // to basicprofile when ATTOM returns "no match" (400) for the expanded call.
+  const expanded = await fetchProfile("expandedprofile");
 
-  const warnings: string[] = [];
+  let json: any;
+
+  if (expanded.ok) {
+    json = expanded.json;
+  } else if (expanded.status === 401 || expanded.status === 403) {
+    throw new Error(
+      "ATTOM Property API unauthorized. Check that your API key is correct and has access to the Property API.",
+    );
+  } else if (expanded.status === 400) {
+    // ATTOM uses 400 for "no match" searches. These are not billable and we
+    // can safely retry against basicprofile, which is sometimes more lenient.
+    warnings.push(
+      "ATTOM expandedprofile returned no match (400); falling back to basicprofile for this lookup.",
+    );
+
+    const basic = await fetchProfile("basicprofile");
+    if (!basic.ok) {
+      if (basic.status === 401 || basic.status === 403) {
+        throw new Error(
+          "ATTOM Property API unauthorized. Check that your API key is correct and has access to the Property API.",
+        );
+      }
+      throw new Error(
+        `ATTOM Property API error: ${basic.status} ${basic.statusText}${basic.body ? ` - ${basic.body}` : ""}`,
+      );
+    }
+    json = basic.json;
+  } else {
+    throw new Error(
+      `ATTOM Property API error: ${expanded.status} ${expanded.statusText}${expanded.body ? ` - ${expanded.body}` : ""}`,
+    );
+  }
 
   const list = Array.isArray(json.property) ? json.property : [];
   if (!list.length) {

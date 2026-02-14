@@ -136,3 +136,28 @@ create table if not exists public.credit_orders (
 );
 
 create index if not exists credit_orders_agent_id_idx on public.credit_orders (agent_id);
+
+-- Promo codes for marketing / free credit campaigns
+create table if not exists public.promo_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  credits integer not null check (credits > 0),
+  -- Maximum total redemptions across all agents (null = unlimited)
+  max_redemptions integer,
+  -- Maximum redemptions per agent (null = unlimited per agent)
+  per_agent_limit integer,
+  expires_at timestamptz,
+  active boolean not null default true,
+  notes text,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.promo_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  promo_code_id uuid not null references public.promo_codes (id) on delete cascade,
+  agent_id uuid not null references public.agent_profiles (id) on delete cascade,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists promo_codes_code_idx on public.promo_codes (code);
+create index if not exists promo_redemptions_promo_agent_idx on public.promo_redemptions (promo_code_id, agent_id);

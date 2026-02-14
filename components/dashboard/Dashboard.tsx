@@ -24,6 +24,7 @@ interface DashboardLead {
   email: string | null;
   phone: string;
   message: string | null;
+  optedIn: boolean;
 }
 
 export function Dashboard({ session }: DashboardProps) {
@@ -99,7 +100,7 @@ export function Dashboard({ session }: DashboardProps) {
           const { data: leadRows, error: leadsError } = await supabase
             .from("leads")
             .select(
-              "id, listing_id, created_at, source, name, email, phone, message",
+              "id, listing_id, created_at, source, name, email, phone, message, opted_in",
             )
             .in("listing_id", listingIds)
             .order("created_at", { ascending: false });
@@ -119,10 +120,11 @@ export function Dashboard({ session }: DashboardProps) {
                 email: (row.email as string | null) ?? null,
                 phone: row.phone as string,
                 message: (row.message as string | null) ?? null,
+                optedIn: Boolean(row.opted_in),
               });
             }
             setLeadCounts(counts);
-            setRecentLeads(recent.slice(0, 25));
+            setRecentLeads(recent);
           }
         } else {
           setLeadCounts({});
@@ -311,6 +313,66 @@ export function Dashboard({ session }: DashboardProps) {
       );
     } finally {
       setPurchaseLoading(false);
+    }
+  }
+
+  function exportLeadsCsv() {
+    if (recentLeads.length === 0) return;
+
+    const header = [
+      "Created At",
+      "Listing",
+      "Source",
+      "Name",
+      "Email",
+      "Phone",
+      "Opted In",
+      "Message",
+    ];
+
+    const escape = (value: string | null | undefined) => {
+      if (value == null) return "";
+      const v = String(value).replace(/"/g, '""');
+      return `"${v}"`;
+    };
+
+    const rows = recentLeads.map((lead) => {
+      const listing = listings.find((l) => l.id === lead.listingId);
+      const listingLabel = listing
+        ? `${listing.street}, ${listing.city}, ${listing.state} ${listing.postalCode}`
+        : lead.listingId;
+
+      return [
+        new Date(lead.createdAt).toISOString(),
+        listingLabel,
+        lead.source,
+        lead.name,
+        lead.email,
+        lead.phone,
+        lead.optedIn ? "Yes" : "No",
+        lead.message,
+      ];
+    });
+
+    const lines = [
+      header.map((h) => escape(h)).join(","),
+      ...rows.map((row) => row.map((cell) => escape(cell)).join(",")),
+    ];
+
+    try {
+      const blob = new Blob([lines.join("\n")], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "listinglaunch-leads.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // If the browser blocks downloads, fail silently
     }
   }
 
@@ -816,8 +878,21 @@ export function Dashboard({ session }: DashboardProps) {
 
       {recentLeads.length > 0 && (
         <section className="rounded-lg border border-zinc-200 bg-white p-4">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">Recent leads</h3>
+            <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+              <span>
+                Showing {Math.min(recentLeads.length, 100)} of {recentLeads.length} lead
+                {recentLeads.length === 1 ? "" : "s"}
+              </span>
+              <button
+                type="button"
+                onClick={exportLeadsCsv}
+                className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+              >
+                Download CSV
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-xs">
@@ -827,11 +902,12 @@ export function Dashboard({ session }: DashboardProps) {
                   <th className="px-3 py-2">Listing</th>
                   <th className="px-3 py-2">Contact</th>
                   <th className="px-3 py-2">Source</th>
+                  <th className="px-3 py-2">Opt-in</th>
                   <th className="px-3 py-2">Message</th>
                 </tr>
               </thead>
               <tbody>
-                {recentLeads.map((lead) => {
+                {recentLeads.slice(0, 100).map((lead) => {
                   const listing = listings.find((l) => l.id === lead.listingId);
                   const listingLabel = listing
                     ? `${listing.street}, ${listing.city}`
@@ -865,6 +941,9 @@ export function Dashboard({ session }: DashboardProps) {
                       </td>
                       <td className="px-3 py-2 text-[11px] text-zinc-500 capitalize">
                         {lead.source}
+                      </td>
+                      <td className="px-3 py-2 text-[11px] text-zinc-500">
+                        {lead.optedIn ? "Yes" : "No"}
                       </td>
                       <td className="px-3 py-2 text-[11px] text-zinc-600">
                         {lead.message || "—"}

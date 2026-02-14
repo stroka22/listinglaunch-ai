@@ -1014,12 +1014,23 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h3 className="text-[11px] font-semibold text-zinc-700">
                 B. Address & Legal
               </h3>
-              <p className="text-[11px] text-zinc-600">Full address: {addressLine}</p>
-              <p className="text-[11px] text-zinc-600">
-                Street address: {listing.street}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Full address: {addressLine}</span>
+                <CopyButton text={addressLine} />
               </p>
-              <p className="text-[11px] text-zinc-600">
-                City / State / ZIP: {listing.city}, {listing.state} {listing.postalCode}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Street address: {listing.street}</span>
+                {listing.street && <CopyButton text={listing.street} />}
+              </p>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  City / State / ZIP: {listing.city}, {listing.state} {listing.postalCode}
+                </span>
+                {listing.city && listing.state && listing.postalCode && (
+                  <CopyButton
+                    text={`${listing.city}, ${listing.state} ${listing.postalCode}`}
+                  />
+                )}
               </p>
               <p className="text-[11px] text-zinc-600">
                 County: {attomExt.county ?? <span className="text-zinc-500">— (public record – verify)</span>}
@@ -1027,11 +1038,21 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <p className="text-[11px] text-zinc-600">
                 Subdivision name: {attomExt.subdivision ?? <span className="text-zinc-500">— (public record – verify)</span>}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Legal description: {attomExt.legalDescription ?? "— (agent to paste from tax record)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Legal description: {attomExt.legalDescription ?? "— (agent to paste from tax record)"}
+                </span>
+                {attomExt.legalDescription && (
+                  <CopyButton text={attomExt.legalDescription} />
+                )}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Parcel / Folio ID: {listing.property.parcelId.value ?? "—"} (Public record)
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Parcel / Folio ID: {listing.property.parcelId.value ?? "—"} (Public record)
+                </span>
+                {listing.property.parcelId.value && (
+                  <CopyButton text={String(listing.property.parcelId.value)} />
+                )}
               </p>
               <p className="text-[11px] text-zinc-600">
                 Directions / driving instructions: <span className="text-zinc-500">— (agent to enter)</span>
@@ -1052,8 +1073,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <p className="text-[11px] text-zinc-600">
                 Ownership: <span className="text-zinc-500">— (Fee Simple / Leasehold)</span>
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Zoning: {attomExt.zoning ?? "— (agent to enter)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Zoning: {attomExt.zoning ?? "— (agent to enter)"}</span>
+                {attomExt.zoning && <CopyButton text={attomExt.zoning} />}
               </p>
               <p className="text-[11px] text-zinc-600">
                 Total sq ft: {attomExt.totalSquareFeet ?? "— (agent to confirm)"}
@@ -1169,8 +1191,11 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <p className="text-[11px] text-zinc-600">
                 Heating / cooling: {answers.hvac_type_age || "— (from smart question)"}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Water / sewer: {answers.water_sewer || "— (from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Water / sewer: {answers.water_sewer || "— (from smart question)"}</span>
+                {answers.water_sewer && (
+                  <CopyButton text={answers.water_sewer} />
+                )}
               </p>
               <p className="text-[11px] text-zinc-600">
                 Utilities included: <span className="text-zinc-500">— (agent to enter)</span>
@@ -1185,8 +1210,13 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h3 className="text-[11px] font-semibold text-zinc-700">
                 H. HOA / Community Information
               </h3>
-              <p className="text-[11px] text-zinc-600">
-                HOA / condo summary: {answers.hoa_fees_amenities || "— (fees & amenities from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  HOA / condo summary: {answers.hoa_fees_amenities || "— (fees & amenities from smart question)"}
+                </span>
+                {answers.hoa_fees_amenities && (
+                  <CopyButton text={answers.hoa_fees_amenities} />
+                )}
               </p>
               <p className="text-[11px] text-zinc-600">
                 HOA exists / name: {attomExt.hoaName ? (
@@ -1248,8 +1278,15 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <p className="text-[11px] text-zinc-600">
                 Flood zone / FEMA panel: <span className="text-zinc-500">— (agent to enter)</span>
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Schools (elem/middle/high): {answers.schools_summary || <span className="text-zinc-500">— (agent to enter)</span>}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Schools (elem/middle/high): {answers.schools_summary || (
+                    <span className="text-zinc-500">— (agent to enter)</span>
+                  )}
+                </span>
+                {answers.schools_summary && (
+                  <CopyButton text={answers.schools_summary} />
+                )}
               </p>
               <p className="text-[11px] text-zinc-600">
                 Township / community name: {attomExt.subdivision ? (

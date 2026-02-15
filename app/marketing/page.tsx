@@ -223,7 +223,7 @@ export default function MarketingPage() {
                 <li>MLS-ready copy generation</li>
                 <li>Compliance-friendly checklists (you still review)</li>
               </ul>
-              <div className="mt-4">
+              <div className="mt-auto pt-4">
                 <button
                   type="button"
                   className="w-full rounded-full bg-[#2E7F7A] px-3 py-2 text-xs font-medium text-white hover:bg-[#256963]"
@@ -232,7 +232,6 @@ export default function MarketingPage() {
                 </button>
               </div>
             </div>
-
             {/* Pro */}
             <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm ring-1 ring-[#2E7F7A]">
               <div className="inline-flex items-center self-start rounded-full bg-[#081F33] px-2 py-0.5 text-[11px] font-medium text-white">
@@ -254,7 +253,7 @@ export default function MarketingPage() {
                 <li>Enhanced copy variations</li>
                 <li>Seller explanation tools</li>
               </ul>
-              <div className="mt-4">
+              <div className="mt-auto pt-4">
                 <button
                   type="button"
                   className="w-full rounded-full bg-[#2E7F7A] px-3 py-2 text-xs font-medium text-white hover:bg-[#256963]"

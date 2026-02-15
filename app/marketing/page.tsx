@@ -22,13 +22,13 @@ export default function MarketingPage() {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link
                 href="/app"
-                className="rounded-full bg-[#2E7F7A] px-5 py-2 text-xs font-medium text-white hover:bg-[#256963]"
+                className="rounded-full bg-[#2E7F7A] px-5 py-2 text-sm font-medium text-white hover:bg-[#256963]"
               >
                 Start a New Listing
               </Link>
               <Link
-                href="#how-it-works"
-                className="text-xs font-medium text-zinc-700 underline-offset-4 hover:underline"
+                href="/how-it-works"
+                className="text-sm font-medium text-zinc-700 underline-offset-4 hover:underline"
               >
                 See How It Works
               </Link>
@@ -46,17 +46,17 @@ export default function MarketingPage() {
 
           <div className="flex-1">
             <div className="mx-auto max-w-md rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between text-[11px] text-zinc-500">
+              <div className="mb-3 flex items-center justify-between text-sm text-zinc-500">
                 <span className="font-medium text-[#081F33]">Listing workspace</span>
                 <span>Stellar MLS prep</span>
               </div>
-              <div className="grid gap-2 text-[11px] text-zinc-700">
+              <div className="grid gap-2 text-sm text-zinc-700">
                 <div className="rounded-lg border border-zinc-200 bg-white p-2">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-medium">MLS Fields</span>
-                    <span className="text-[11px] text-[#2E7F7A]">72% complete</span>
+                    <span className="text-sm text-[#2E7F7A]">72% complete</span>
                   </div>
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-sm text-zinc-500">
                     Core property, tax, and location details drafted from public
                     records into your ListingLaunchAI workspace.
                   </p>
@@ -64,18 +64,18 @@ export default function MarketingPage() {
                 <div className="rounded-lg border border-zinc-200 bg-white p-2">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-medium">Disclosures (FL)</span>
-                    <span className="text-[11px] text-zinc-500">Seller Q&amp;A only</span>
+                    <span className="text-sm text-zinc-500">Seller Q&amp;A only</span>
                   </div>
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-sm text-zinc-500">
                     Structured seller inputs, with drafts ready for your forms.
                   </p>
                 </div>
                 <div className="rounded-lg border border-zinc-200 bg-white p-2">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-medium">MLS Copy</span>
-                    <span className="text-[11px] text-zinc-500">Public &amp; private</span>
+                    <span className="text-sm text-zinc-500">Public &amp; private</span>
                   </div>
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-sm text-zinc-500">
                     Stellar-ready remarks, feature bullets, and social captions.
                   </p>
                 </div>
@@ -96,7 +96,7 @@ export default function MarketingPage() {
             Stellar MLS agents in Florida.
           </p>
 
-          <div className="grid gap-3 md:grid-cols-5 text-[11px]">
+          <div className="grid gap-3 md:grid-cols-5 text-sm">
             {[
               {
                 title: "Enter the property address",
@@ -123,16 +123,16 @@ export default function MarketingPage() {
                 key={step.title}
                 className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-3"
               >
-                <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-[11px] font-semibold text-white">
+                <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-xs font-semibold text-white">
                     {idx + 1}
                   </span>
                   <span>Step {idx + 1}</span>
                 </div>
-                <div className="text-[11px] font-semibold text-zinc-900">
+                <div className="text-sm font-semibold text-zinc-900">
                   {step.title}
                 </div>
-                <p className="text-[11px] text-zinc-600">{step.body}</p>
+                <p className="text-sm text-zinc-600">{step.body}</p>
               </div>
             ))}
           </div>
@@ -152,7 +152,7 @@ export default function MarketingPage() {
             </p>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 text-[11px]">
+          <div className="grid gap-3 md:grid-cols-2 text-sm">
             {[ 
               {
                 title: "MLS-aligned data workspace",
@@ -179,14 +179,14 @@ export default function MarketingPage() {
                 body: "Keeps key fields, disclosures, and notes in one place so you can review against Stellar MLS and brokerage rules before you publish.",
               },
             ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-xl border border-zinc-200 bg-zinc-50 p-3"
-              >
-                <div className="mb-1 text-[11px] font-semibold text-zinc-900">
+                <div
+                  key={item.title}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50 p-3"
+                >
+                  <div className="mb-1 text-sm font-semibold text-zinc-900">
                   {item.title}
                 </div>
-                <p className="text-[11px] text-zinc-600">{item.body}</p>
+                  <p className="text-sm text-zinc-600">{item.body}</p>
               </div>
             ))}
           </div>
@@ -206,18 +206,18 @@ export default function MarketingPage() {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 text-[11px]">
+          <div className="grid gap-4 md:grid-cols-2 text-sm">
             {/* Standard */}
             <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
               <h3 className="text-sm font-semibold text-zinc-900">Standard Listing</h3>
-              <p className="mt-1 text-[11px] text-zinc-600">One-time per listing.</p>
+              <p className="mt-1 text-sm text-zinc-600">One-time per listing.</p>
               <div className="mt-3 text-2xl font-semibold text-zinc-900">
                 —
                 <span className="ml-1 text-xs font-normal text-zinc-500">
                   pricing TBD
                 </span>
               </div>
-              <ul className="mt-3 space-y-1 text-[11px] text-zinc-700">
+              <ul className="mt-3 space-y-1 text-sm text-zinc-700">
                 <li>MLS-style data draft from public records</li>
                 <li>Florida disclosure drafts</li>
                 <li>MLS-ready copy generation</li>
@@ -239,7 +239,7 @@ export default function MarketingPage() {
                 Most Popular
               </div>
               <h3 className="mt-2 text-sm font-semibold text-zinc-900">Pro Listing</h3>
-              <p className="mt-1 text-[11px] text-zinc-600">
+              <p className="mt-1 text-sm text-zinc-600">
                 For listings where presentation and seller conversations really matter.
               </p>
               <div className="mt-3 text-2xl font-semibold text-zinc-900">
@@ -248,7 +248,7 @@ export default function MarketingPage() {
                   pricing TBD
                 </span>
               </div>
-              <ul className="mt-3 space-y-1 text-[11px] text-zinc-700">
+              <ul className="mt-3 space-y-1 text-sm text-zinc-700">
                 <li>Everything in Standard</li>
                 <li>Seller listing presentation PDF</li>
                 <li>Enhanced copy variations</li>
@@ -273,24 +273,24 @@ export default function MarketingPage() {
           <h2 className="text-lg font-semibold tracking-tight text-[#081F33]">
             Who ListingLaunchAI is for
           </h2>
-          <div className="grid gap-3 text-[11px] md:grid-cols-3">
+          <div className="grid gap-3 text-sm md:grid-cols-3">
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <h3 className="text-[11px] font-semibold text-zinc-900">Solo agents</h3>
-              <p className="mt-1 text-[11px] text-zinc-600">
+              <h3 className="text-sm font-semibold text-zinc-900">Solo agents</h3>
+              <p className="mt-1 text-sm text-zinc-600">
                 Agents who run their own listings and want repeatable MLS prep without
                 rebuilding every form.
               </p>
             </div>
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <h3 className="text-[11px] font-semibold text-zinc-900">Teams &amp; brokerages</h3>
-              <p className="mt-1 text-[11px] text-zinc-600">
+              <h3 className="text-sm font-semibold text-zinc-900">Teams &amp; brokerages</h3>
+              <p className="mt-1 text-sm text-zinc-600">
                 Teams that want consistent, compliant workflows across multiple
                 listing agents.
               </p>
             </div>
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <h3 className="text-[11px] font-semibold text-zinc-900">Stellar MLS agents</h3>
-              <p className="mt-1 text-[11px] text-zinc-600">
+              <h3 className="text-sm font-semibold text-zinc-900">Stellar MLS agents</h3>
+              <p className="mt-1 text-sm text-zinc-600">
                 Florida agents who need Stellar-aligned fields and Florida-specific
                 disclosure support.
               </p>
@@ -301,7 +301,7 @@ export default function MarketingPage() {
 
       {/* Trust & data */}
       <section className="border-b border-zinc-100 bg-zinc-50">
-        <div className="mx-auto max-w-6xl px-6 py-8 space-y-3 text-[11px]">
+        <div className="mx-auto max-w-6xl px-6 py-8 space-y-3 text-sm">
           <h2 className="text-sm font-semibold tracking-tight text-[#081F33]">
             Trust, data, and review responsibilities
           </h2>
@@ -327,24 +327,24 @@ export default function MarketingPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2 text-xs">
             <div className="font-semibold text-white">ListingLaunchAI</div>
-            <p className="text-[11px] text-zinc-400 max-w-xs">
+            <p className="text-sm text-zinc-400 max-w-xs">
               A focused tool for Stellar MLS agents in Florida to prepare accurate,
               MLS-ready listings with confidence.
             </p>
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-sm text-zinc-500">
               © {new Date().getFullYear()} ListingLaunchAI. All rights reserved.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 text-[11px]">
+          <div className="grid grid-cols-2 gap-6 text-sm">
             <div className="space-y-1">
               <div className="font-medium text-white">Product</div>
               <Link href="/marketing" className="block text-zinc-400 hover:text-white">
                 About
               </Link>
-              <a href="#how-it-works" className="block text-zinc-400 hover:text-white">
+              <Link href="/how-it-works" className="block text-zinc-400 hover:text-white">
                 How It Works
-              </a>
+              </Link>
               <a href="#pricing" className="block text-zinc-400 hover:text-white">
                 Pricing
               </a>

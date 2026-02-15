@@ -20,18 +20,18 @@ export default function HowItWorksPage() {
                 pricing, strategy, and your clients.
               </p>
             </div>
-            <div className="text-xs text-zinc-600">
+            <div className="text-sm text-zinc-600">
               <p className="mb-1 font-medium text-zinc-800">Ready to try it?</p>
               <div className="flex flex-wrap gap-2">
                 <Link
                   href="/app"
-                  className="rounded-full bg-[#2E7F7A] px-4 py-2 text-[11px] font-medium text-white hover:bg-[#256963]"
+                  className="rounded-full bg-[#2E7F7A] px-4 py-2 text-sm font-medium text-white hover:bg-[#256963]"
                 >
                   Start a New Listing
                 </Link>
                 <Link
                   href="/marketing#pricing"
-                  className="text-[11px] font-medium text-[#081F33] underline-offset-4 hover:underline"
+                  className="text-sm font-medium text-[#081F33] underline-offset-4 hover:underline"
                 >
                   View pricing
                 </Link>
@@ -52,7 +52,7 @@ export default function HowItWorksPage() {
             research, structure, and first drafts.
           </p>
 
-          <div className="grid gap-3 text-[11px] md:grid-cols-5">
+          <div className="grid gap-3 text-sm md:grid-cols-5">
             {[ 
               {
                 title: "Start with the address",
@@ -79,16 +79,16 @@ export default function HowItWorksPage() {
                 key={step.title}
                 className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-3"
               >
-                <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-[11px] font-semibold text-white">
+                <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-xs font-semibold text-white">
                     {idx + 1}
                   </span>
                   <span>Step {idx + 1}</span>
                 </div>
-                <div className="text-[11px] font-semibold text-zinc-900">
+                <div className="text-sm font-semibold text-zinc-900">
                   {step.title}
                 </div>
-                <p className="text-[11px] text-zinc-600">{step.body}</p>
+                <p className="text-sm text-zinc-600">{step.body}</p>
               </div>
             ))}
           </div>
@@ -97,7 +97,7 @@ export default function HowItWorksPage() {
 
       {/* Data gathering for MLS */}
       <section className="border-b border-zinc-100 bg-white">
-        <div className="mx-auto max-w-6xl space-y-4 px-6 py-10 text-[11px] md:grid md:grid-cols-[1.1fr,1.4fr] md:gap-10 md:space-y-0">
+        <div className="mx-auto max-w-6xl space-y-4 px-6 py-10 text-sm md:grid md:grid-cols-[1.1fr,1.4fr] md:gap-10 md:space-y-0">
           <div className="space-y-2 text-sm">
             <h2 className="text-lg font-semibold tracking-tight text-[#081F33]">
               How we gather everything your MLS needs
@@ -109,9 +109,9 @@ export default function HowItWorksPage() {
             </p>
           </div>
 
-          <div className="space-y-3">
+            <div className="space-y-3">
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <h3 className="mb-1 text-[11px] font-semibold text-zinc-900">
+              <h3 className="mb-1 text-sm font-semibold text-zinc-900">
                 1. Property lookup in public records
               </h3>
               <p className="text-zinc-600">
@@ -123,7 +123,7 @@ export default function HowItWorksPage() {
             </div>
 
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <h3 className="mb-1 text-[11px] font-semibold text-zinc-900">
+              <h3 className="mb-1 text-sm font-semibold text-zinc-900">
                 2. Mapping into Stellar-style fields
               </h3>
               <p className="text-zinc-600">
@@ -136,7 +136,7 @@ export default function HowItWorksPage() {
             </div>
 
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <h3 className="mb-1 text-[11px] font-semibold text-zinc-900">
+              <h3 className="mb-1 text-sm font-semibold text-zinc-900">
                 3. Smart questions for human-only details
               </h3>
               <p className="text-zinc-600">
@@ -148,7 +148,7 @@ export default function HowItWorksPage() {
             </div>
 
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <h3 className="mb-1 text-[11px] font-semibold text-zinc-900">
+              <h3 className="mb-1 text-sm font-semibold text-zinc-900">
                 4. Research helpers for final verification
               </h3>
               <p className="text-zinc-600">
@@ -175,9 +175,9 @@ export default function HowItWorksPage() {
             </p>
           </div>
 
-          <div className="grid gap-3 text-[11px]">
+          <div className="grid gap-3 text-sm">
             <div className="rounded-xl border border-zinc-200 bg-white p-3">
-              <h3 className="mb-1 text-[11px] font-semibold text-zinc-900">
+              <h3 className="mb-1 text-sm font-semibold text-zinc-900">
                 Agent-only open house flyer
               </h3>
               <p className="text-zinc-600">
@@ -187,7 +187,7 @@ export default function HowItWorksPage() {
               </p>
             </div>
             <div className="rounded-xl border border-zinc-200 bg-white p-3">
-              <h3 className="mb-1 text-[11px] font-semibold text-zinc-900">
+              <h3 className="mb-1 text-sm font-semibold text-zinc-900">
                 Co-branded agent + lender flyer
               </h3>
               <p className="text-zinc-600">
@@ -197,7 +197,7 @@ export default function HowItWorksPage() {
               </p>
             </div>
             <div className="rounded-xl border border-zinc-200 bg-white p-3">
-              <h3 className="mb-1 text-[11px] font-semibold text-zinc-900">
+              <h3 className="mb-1 text-sm font-semibold text-zinc-900">
                 Social-ready versions of your flyers
               </h3>
               <p className="text-zinc-600">
@@ -225,7 +225,7 @@ export default function HowItWorksPage() {
           <div className="pt-2">
             <Link
               href="/app"
-              className="inline-flex items-center rounded-full bg-[#2E7F7A] px-5 py-2 text-[11px] font-medium text-white hover:bg-[#256963]"
+              className="inline-flex items-center rounded-full bg-[#2E7F7A] px-5 py-2 text-sm font-medium text-white hover:bg-[#256963]"
             >
               Launch your next listing
             </Link>

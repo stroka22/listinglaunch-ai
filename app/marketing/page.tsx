@@ -249,9 +249,51 @@ export default function MarketingPage() {
               </div>
               <ul className="mt-3 space-y-1 text-sm text-zinc-700">
                 <li>Everything in Standard</li>
-                <li>Seller listing presentation PDF</li>
-                <li>Enhanced copy variations</li>
-                <li>Seller explanation tools</li>
+                <li className="flex items-start justify-between gap-2">
+                  <span>Seller listing presentation PDF</span>
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      aria-label="What is the seller listing presentation PDF?"
+                      className="flex h-5 w-5 items-center justify-center rounded-full border border-zinc-400 bg-white text-[10px] font-medium text-zinc-600 hover:bg-zinc-100"
+                    >
+                      ?
+                    </button>
+                    <div className="pointer-events-none absolute right-0 z-10 mt-1 hidden w-64 rounded-md bg-zinc-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">
+                      A branded, client-facing PDF you can use at the listing appointment to walk sellers through their property details, positioning, and marketing plan using the drafts from this workspace.
+                    </div>
+                  </div>
+                </li>
+                <li className="flex items-start justify-between gap-2">
+                  <span>Enhanced copy variations</span>
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      aria-label="What are enhanced copy variations?"
+                      className="flex h-5 w-5 items-center justify-center rounded-full border border-zinc-400 bg-white text-[10px] font-medium text-zinc-600 hover:bg-zinc-100"
+                    >
+                      ?
+                    </button>
+                    <div className="pointer-events-none absolute right-0 z-10 mt-1 hidden w-64 rounded-md bg-zinc-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">
+                      Extra versions of the listing remarks tuned for different emphases (e.g., feature-forward, neighborhood-focused) so you can pick the one that best fits the property and your brokerage style.
+                    </div>
+                  </div>
+                </li>
+                <li className="flex items-start justify-between gap-2">
+                  <span>Seller explanation tools</span>
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      aria-label="What are seller explanation tools?"
+                      className="flex h-5 w-5 items-center justify-center rounded-full border border-zinc-400 bg-white text-[10px] font-medium text-zinc-600 hover:bg-zinc-100"
+                    >
+                      ?
+                    </button>
+                    <div className="pointer-events-none absolute right-0 z-10 mt-1 hidden w-64 rounded-md bg-zinc-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">
+                      Short, plain-language explanations you can use to talk through pricing, risk items, and disclosure topics with sellers, grounded in the same data the system pulls into your workspace.
+                    </div>
+                  </div>
+                </li>
               </ul>
               <div className="mt-auto pt-4">
                 <button

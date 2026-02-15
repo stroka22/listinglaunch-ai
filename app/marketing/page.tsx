@@ -14,9 +14,9 @@ export default function MarketingPage() {
               Complete your listings faster. Launch with confidence.
             </h1>
             <p className="max-w-xl text-sm text-zinc-600">
-              ListingLaunchAI automatically fills, verifies, and prepares MLS listings —
-              including disclosures, compliance checks, and polished copy — so agents
-              don&apos;t miss details or waste time.
+              ListingLaunchAI helps you gather property data, verify key details, and
+              prepare MLS-ready copy, packets, and flyers — so agents don&apos;t miss
+              details or waste time.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -38,6 +38,10 @@ export default function MarketingPage() {
               No subscriptions. Use ListingLaunchAI only when you need it, on a
               per-listing basis.
             </p>
+            <p className="pt-1 text-[10px] text-zinc-500">
+              ListingLaunchAI does not log in to or submit data into Stellar MLS. It
+              prepares MLS-ready drafts for you to review and enter.
+            </p>
           </div>
 
           <div className="flex-1">
@@ -53,8 +57,8 @@ export default function MarketingPage() {
                     <span className="text-[10px] text-[#2E7F7A]">72% complete</span>
                   </div>
                   <p className="text-[10px] text-zinc-500">
-                    Core property, tax, and location fields pre-filled from public
-                    records.
+                    Core property, tax, and location details drafted from public
+                    records into your ListingLaunchAI workspace.
                   </p>
                 </div>
                 <div className="rounded-lg border border-zinc-200 bg-white p-2">
@@ -88,7 +92,7 @@ export default function MarketingPage() {
             How ListingLaunchAI fits into your workflow
           </h2>
           <p className="text-sm text-zinc-600 max-w-2xl">
-            A simple, repeatable path from address to MLS-ready listing — designed for
+            A simple, repeatable path from address to MLS-ready drafts — designed for
             Stellar MLS agents in Florida.
           </p>
 
@@ -99,8 +103,8 @@ export default function MarketingPage() {
                 body: "We locate the property in public and enterprise data sources.",
               },
               {
-                title: "Review auto-filled details",
-                body: "Stellar-style fields are pre-mapped for you to confirm or adjust.",
+                title: "Review drafted details",
+                body: "Stellar-style fields are pre-mapped in your workspace for you to confirm or adjust before entering them into the MLS.",
               },
               {
                 title: "Complete disclosures",
@@ -151,8 +155,8 @@ export default function MarketingPage() {
           <div className="grid gap-3 md:grid-cols-2 text-[11px]">
             {[ 
               {
-                title: "MLS-aligned data completion",
-                body: "Property and tax records mapped into Stellar-style sections for quick review.",
+                title: "MLS-aligned data workspace",
+                body: "Property and tax records mapped into Stellar-style sections for quick review before you enter them into the MLS.",
               },
               {
                 title: "Florida disclosure automation",
@@ -171,8 +175,8 @@ export default function MarketingPage() {
                 body: "Area details such as access and nearby schools organized for quick reference.",
               },
               {
-                title: "MLS compliance scanning",
-                body: "Language checks that flag risky or non-compliant phrases before you publish.",
+                title: "Compliance-friendly structure",
+                body: "Keeps key fields, disclosures, and notes in one place so you can review against Stellar MLS and brokerage rules before you publish.",
               },
             ].map((item) => (
               <div
@@ -214,10 +218,10 @@ export default function MarketingPage() {
                 </span>
               </div>
               <ul className="mt-3 space-y-1 text-[11px] text-zinc-700">
-                <li>Auto-filled MLS data</li>
+                <li>MLS-style data draft from public records</li>
                 <li>Florida disclosure drafts</li>
-                <li>MLS copy generation</li>
-                <li>Basic compliance scan</li>
+                <li>MLS-ready copy generation</li>
+                <li>Compliance-friendly checklists (you still review)</li>
               </ul>
               <div className="mt-4">
                 <button

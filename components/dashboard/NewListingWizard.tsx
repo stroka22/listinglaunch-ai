@@ -427,10 +427,10 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
             )}
           </form>
 
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-zinc-600">
-              2. Review auto-filled core data
-            </div>
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-zinc-600">
+                2. Review imported core data
+              </div>
             <p className="text-[11px] text-zinc-500">
               Values marked as public record come from our data provider. Update any
               fields that are incorrect and mark them as confirmed by you.

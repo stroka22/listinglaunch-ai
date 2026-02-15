@@ -8,7 +8,7 @@ export default function HowItWorksPage() {
         <div className="mx-auto max-w-6xl px-6 py-10 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-2">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
                 How it works
               </p>
               <h1 className="text-3xl font-semibold tracking-tight text-[#081F33] md:text-4xl">
@@ -79,8 +79,8 @@ export default function HowItWorksPage() {
                 key={step.title}
                 className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-3"
               >
-                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-[10px] font-semibold text-white">
+                <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-[11px] font-semibold text-white">
                     {idx + 1}
                   </span>
                   <span>Step {idx + 1}</span>

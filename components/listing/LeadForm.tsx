@@ -78,13 +78,13 @@ export function LeadForm({ listingId }: LeadFormProps) {
       </div>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[10px] text-red-700">
+        <div className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700">
           {error}
         </div>
       )}
 
       {status === "ok" && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] text-emerald-700">
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700">
           Thanks—we'll share this with the agent.
         </div>
       )}

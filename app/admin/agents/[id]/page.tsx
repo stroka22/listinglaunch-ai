@@ -142,7 +142,7 @@ export default async function AdminAgentDetailPage({ params }: PageProps) {
                       <div className="font-medium text-zinc-800">
                         {l.street}, {l.city} {l.state} {l.postal_code}
                       </div>
-                      <div className="text-[10px] text-zinc-500">
+                      <div className="text-[11px] text-zinc-500">
                         {l.slug}
                       </div>
                     </td>

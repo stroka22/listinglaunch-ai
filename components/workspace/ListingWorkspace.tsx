@@ -31,7 +31,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+      className="rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-700 hover:bg-zinc-100"
     >
       {status === "copied" ? "Copied" : "Copy"}
     </button>
@@ -584,7 +584,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h2 className="font-semibold text-zinc-800">
                 MLS public remarks
               </h2>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 Copy into Stellar MLS (public remarks)
               </span>
             </div>
@@ -627,7 +627,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               {ai.mlsPrivateRemarks || "Not generated"}
             </p>
 
-            <div className="mt-3 space-y-1 text-[10px] text-zinc-500">
+            <div className="mt-3 space-y-1 text-[11px] text-zinc-500">
               <p>
                 Use this section for showing instructions and material facts.
                 Avoid marketing language that belongs in public remarks.
@@ -638,7 +638,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           <section className="space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold text-zinc-800">Feature bullets</h2>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 Interior / exterior / community
               </span>
             </div>
@@ -677,7 +677,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h2 className="font-semibold text-zinc-800">
                 Social media captions
               </h2>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 Instagram / Facebook / LinkedIn / Open house
               </span>
             </div>
@@ -712,7 +712,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           <section className="mt-4 space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold text-zinc-800">Open house details</h2>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 Optional line shown on the open house flyer
               </span>
             </div>
@@ -753,7 +753,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           <section className="mt-4 space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold text-zinc-800">Property photos</h2>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 Used on the open house flyer (first 3 photos)
               </span>
             </div>
@@ -796,7 +796,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                     <button
                       type="button"
                       onClick={() => handleRemovePhoto(url)}
-                      className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                      className="rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-700 hover:bg-zinc-100"
                     >
                       Remove
                     </button>
@@ -811,7 +811,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h2 className="font-semibold text-zinc-800">
                 Mortgage partner (optional co-branding)
               </h2>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 Shown on co-branded flyer version only
               </span>
             </div>
@@ -911,7 +911,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                     }
                     className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px] md:flex-1"
                   />
-                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-zinc-300 px-2 py-1 text-[10px] font-medium text-zinc-700 hover:bg-zinc-100">
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100">
                     <input
                       type="file"
                       accept="image/jpeg,image/png"
@@ -953,12 +953,12 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
         <section className="space-y-3 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold text-zinc-800">Stellar MLS fields</h2>
-            <span className="text-[10px] text-zinc-500">
+            <span className="text-[11px] text-zinc-500">
               Read-only view; copy values into Stellar MLS
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-2 text-[10px] text-zinc-500">
+          <div className="flex flex-wrap gap-2 text-[11px] text-zinc-500">
             <a
               href={propertyAppraiserUrl}
               target="_blank"
@@ -1353,13 +1353,13 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
         <section className="space-y-3 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold text-zinc-800">Florida disclosures</h2>
-            <span className="text-[10px] text-zinc-500">
+            <span className="text-[11px] text-zinc-500">
               Seller/agent-provided; ListingLaunchAI does not provide legal advice
             </span>
           </div>
 
           {disclosures && totalDisclosureQuestions > 0 && (
-            <div className="text-[10px] text-zinc-600">
+            <div className="text-[11px] text-zinc-600">
               {answeredDisclosureQuestions}/{totalDisclosureQuestions} questions answered
               {answeredDisclosureQuestions < totalDisclosureQuestions && (
                 <span className="ml-1 font-medium text-amber-700">
@@ -1476,13 +1476,13 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                       {q.label}
                     </div>
                     {isUnanswered && (
-                      <span className="text-[10px] font-semibold text-amber-700">
+                      <span className="text-[11px] font-semibold text-amber-700">
                         Not answered
                       </span>
                     )}
                   </div>
                   {q.helper && (
-                    <p className="text-[10px] text-zinc-500">{q.helper}</p>
+                    <p className="text-[11px] text-zinc-500">{q.helper}</p>
                   )}
                   <div className="flex flex-wrap gap-3 text-[11px] text-zinc-700">
                     <label className="flex items-center gap-1">
@@ -1540,7 +1540,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             )}
           </div>
 
-          <p className="mt-2 text-[10px] text-zinc-500">
+          <p className="mt-2 text-[11px] text-zinc-500">
             This section stores seller-provided responses only. ListingLaunchAI
             does not provide legal advice. Agent and seller must review all
             disclosures prior to execution.

@@ -279,7 +279,7 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
               >
                 Choose headshot file
               </label>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 JPG or PNG, used on flyers and packets.
               </span>
               <input
@@ -309,7 +309,7 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
               >
                 Choose logo file
               </label>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[11px] text-zinc-500">
                 Transparent PNG recommended for best results.
               </span>
               <input

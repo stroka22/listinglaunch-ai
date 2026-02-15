@@ -470,7 +470,7 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
                       <span className="text-[11px] font-medium text-zinc-700">
                         {labelMap[key]}
                       </span>
-                      <span className="text-[10px] text-zinc-500">
+                      <span className="text-[11px] text-zinc-500">
                         {field.source === "public_record"
                           ? "Public record"
                           : field.source === "agent_confirmed"
@@ -492,7 +492,7 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
                       }}
                       className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-black/60"
                     />
-                    <label className="flex items-center gap-1 text-[10px] text-zinc-600">
+                    <label className="flex items-center gap-1 text-[11px] text-zinc-600">
                       <input
                         type="checkbox"
                         checked={field.confirmedByAgent}
@@ -526,7 +526,7 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
                     {q.label}
                   </label>
                   {q.helper && (
-                    <p className="text-[10px] text-zinc-500">{q.helper}</p>
+                    <p className="text-[11px] text-zinc-500">{q.helper}</p>
                   )}
                   <textarea
                     rows={2}

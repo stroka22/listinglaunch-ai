@@ -302,7 +302,7 @@ export default async function AdminPage() {
                           {agent.name || "(Unnamed agent)"}
                         </Link>
                       </div>
-                      <div className="text-[10px] text-zinc-500">
+                      <div className="text-[11px] text-zinc-500">
                         {agent.email || agent.id}
                       </div>
                     </td>

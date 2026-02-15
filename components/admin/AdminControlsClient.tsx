@@ -234,7 +234,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
                     <td className="px-3 py-1.5 text-[11px] text-zinc-700">
                       {promo.credits}
                     </td>
-                    <td className="px-3 py-1.5 text-[10px] text-zinc-700">
+                    <td className="px-3 py-1.5 text-[11px] text-zinc-700">
                       <div>
                         Max total: {promo.maxRedemptions ?? "∞"}
                       </div>
@@ -242,7 +242,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
                         Per agent: {promo.perAgentLimit ?? "∞"}
                       </div>
                     </td>
-                    <td className="px-3 py-1.5 text-[10px] text-zinc-700">
+                    <td className="px-3 py-1.5 text-[11px] text-zinc-700">
                       <div>
                         Uses: {promo.totalRedemptions}
                       </div>
@@ -250,30 +250,30 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
                         Agents: {promo.uniqueAgents}
                       </div>
                     </td>
-                    <td className="px-3 py-1.5 text-[10px] text-zinc-700">
+                    <td className="px-3 py-1.5 text-[11px] text-zinc-700">
                       {promo.expiresAt
                         ? new Date(promo.expiresAt).toLocaleDateString()
                         : "None"}
                     </td>
-                    <td className="px-3 py-1.5 text-[10px]">
+                    <td className="px-3 py-1.5 text-[11px]">
                       {promo.active ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500">
+                        <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-500">
                           Inactive
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-[10px] text-zinc-700">
+                    <td className="px-3 py-1.5 text-[11px] text-zinc-700">
                       {promo.notes || "—"}
                     </td>
-                    <td className="px-3 py-1.5 text-[10px] text-zinc-700">
+                    <td className="px-3 py-1.5 text-[11px] text-zinc-700">
                       <button
                         type="button"
                         onClick={() => togglePromoActive(promo.id, !promo.active)}
-                        className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-100"
+                        className="rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-700 hover:bg-zinc-100"
                       >
                         {promo.active ? "Deactivate" : "Activate"}
                       </button>
@@ -291,7 +291,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
           </div>
           <div className="grid gap-2 md:grid-cols-3">
             <div className="space-y-1">
-              <label className="block text-[10px] font-medium text-zinc-700">
+              <label className="block text-[11px] font-medium text-zinc-700">
                 Code
               </label>
               <input
@@ -303,7 +303,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] font-medium text-zinc-700">
+              <label className="block text-[11px] font-medium text-zinc-700">
                 Credits
               </label>
               <input
@@ -321,7 +321,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] font-medium text-zinc-700">
+              <label className="block text-[11px] font-medium text-zinc-700">
                 Expires at (ISO date/time)
               </label>
               <input
@@ -335,7 +335,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
           </div>
           <div className="grid gap-2 md:grid-cols-3">
             <div className="space-y-1">
-              <label className="block text-[10px] font-medium text-zinc-700">
+              <label className="block text-[11px] font-medium text-zinc-700">
                 Max redemptions (all agents)
               </label>
               <input
@@ -347,7 +347,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] font-medium text-zinc-700">
+              <label className="block text-[11px] font-medium text-zinc-700">
                 Per-agent limit
               </label>
               <input
@@ -359,7 +359,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] font-medium text-zinc-700">
+              <label className="block text-[11px] font-medium text-zinc-700">
                 Notes (internal)
               </label>
               <input
@@ -371,7 +371,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
             </div>
           </div>
           <div className="mt-1 flex items-center justify-between gap-2">
-            <label className="flex items-center gap-2 text-[10px] text-zinc-700">
+            <label className="flex items-center gap-2 text-[11px] text-zinc-700">
               <input
                 type="checkbox"
                 name="active"
@@ -389,12 +389,12 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
             </button>
           </div>
           {promoCreateStatus && (
-            <div className="text-[10px] text-emerald-700">
+            <div className="text-[11px] text-emerald-700">
               {promoCreateStatus}
             </div>
           )}
           {promoCreateError && (
-            <div className="text-[10px] text-red-700">{promoCreateError}</div>
+            <div className="text-[11px] text-red-700">{promoCreateError}</div>
           )}
         </form>
       </section>
@@ -416,7 +416,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
           className="flex flex-wrap items-end gap-2"
         >
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-zinc-700">
+            <label className="block text-[11px] font-medium text-zinc-700">
               Agent
             </label>
             <select
@@ -432,7 +432,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
             </select>
           </div>
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-zinc-700">
+            <label className="block text-[11px] font-medium text-zinc-700">
               Delta (e.g. 3 or -1)
             </label>
             <input
@@ -443,7 +443,7 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
             />
           </div>
           <div className="flex-1 space-y-1">
-            <label className="block text-[10px] font-medium text-zinc-700">
+            <label className="block text-[11px] font-medium text-zinc-700">
               Reason (internal)
             </label>
             <input
@@ -462,12 +462,12 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
           </button>
         </form>
         {manualStatus && (
-          <div className="mt-2 text-[10px] text-emerald-700">
+          <div className="mt-2 text-[11px] text-emerald-700">
             {manualStatus}
           </div>
         )}
         {manualError && (
-          <div className="mt-2 text-[10px] text-red-700">{manualError}</div>
+          <div className="mt-2 text-[11px] text-red-700">{manualError}</div>
         )}
       </section>
     </div>

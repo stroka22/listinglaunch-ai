@@ -7,7 +7,7 @@ export default function MarketingPage() {
       <section className="border-b border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-8 md:flex-row md:items-center md:py-12">
           <div className="flex-1 space-y-4">
-            <p className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-medium text-zinc-600">
+            <p className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-medium text-zinc-600">
               For Stellar MLS agents in Florida
             </p>
             <h1 className="text-3xl font-semibold tracking-tight text-[#081F33] md:text-4xl">
@@ -38,7 +38,7 @@ export default function MarketingPage() {
               No subscriptions. Use ListingLaunchAI only when you need it, on a
               per-listing basis.
             </p>
-            <p className="pt-1 text-[10px] text-zinc-500">
+            <p className="pt-1 text-[11px] text-zinc-500">
               ListingLaunchAI does not log in to or submit data into Stellar MLS. It
               prepares MLS-ready drafts for you to review and enter.
             </p>
@@ -54,9 +54,9 @@ export default function MarketingPage() {
                 <div className="rounded-lg border border-zinc-200 bg-white p-2">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-medium">MLS Fields</span>
-                    <span className="text-[10px] text-[#2E7F7A]">72% complete</span>
+                    <span className="text-[11px] text-[#2E7F7A]">72% complete</span>
                   </div>
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-[11px] text-zinc-500">
                     Core property, tax, and location details drafted from public
                     records into your ListingLaunchAI workspace.
                   </p>
@@ -64,18 +64,18 @@ export default function MarketingPage() {
                 <div className="rounded-lg border border-zinc-200 bg-white p-2">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-medium">Disclosures (FL)</span>
-                    <span className="text-[10px] text-zinc-500">Seller Q&amp;A only</span>
+                    <span className="text-[11px] text-zinc-500">Seller Q&amp;A only</span>
                   </div>
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-[11px] text-zinc-500">
                     Structured seller inputs, with drafts ready for your forms.
                   </p>
                 </div>
                 <div className="rounded-lg border border-zinc-200 bg-white p-2">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-medium">MLS Copy</span>
-                    <span className="text-[10px] text-zinc-500">Public &amp; private</span>
+                    <span className="text-[11px] text-zinc-500">Public &amp; private</span>
                   </div>
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-[11px] text-zinc-500">
                     Stellar-ready remarks, feature bullets, and social captions.
                   </p>
                 </div>
@@ -123,8 +123,8 @@ export default function MarketingPage() {
                 key={step.title}
                 className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-3"
               >
-                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-[10px] font-semibold text-white">
+                <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#081F33] text-[11px] font-semibold text-white">
                     {idx + 1}
                   </span>
                   <span>Step {idx + 1}</span>
@@ -235,7 +235,7 @@ export default function MarketingPage() {
 
             {/* Pro */}
             <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm ring-1 ring-[#2E7F7A]">
-              <div className="inline-flex items-center self-start rounded-full bg-[#081F33] px-2 py-0.5 text-[10px] font-medium text-white">
+              <div className="inline-flex items-center self-start rounded-full bg-[#081F33] px-2 py-0.5 text-[11px] font-medium text-white">
                 Most Popular
               </div>
               <h3 className="mt-2 text-sm font-semibold text-zinc-900">Pro Listing</h3>

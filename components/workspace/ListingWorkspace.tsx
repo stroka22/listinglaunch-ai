@@ -464,11 +464,76 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
   }
 
   const ai = listing.aiContent ?? null;
+  const standardPublicRemarks = ai?.mlsPublicRemarks?.standard ?? "";
+  const privateRemarks = ai?.mlsPrivateRemarks ?? "";
+  const allFeaturesText = ai
+    ? [
+        ...ai.featureBulletsInterior.map((b) => `Interior: ${b}`),
+        ...ai.featureBulletsExterior.map((b) => `Exterior: ${b}`),
+        ...ai.featureBulletsCommunity.map((b) => `Community: ${b}`),
+      ].join("\n")
+    : "";
+
   const addressLine = `${listing.street}, ${listing.city}, ${listing.state} ${listing.postalCode}`;
   const answers = listing.wizardAnswers ?? {};
   const agentBranding = listing.branding?.agent ?? null;
 
   const attomExt = deriveExtendedFieldsFromRaw(listing.estatedRaw ?? null);
+
+  const mlsChecklist = [
+    {
+      id: "address",
+      label: "Address & legal",
+      ready:
+        Boolean(listing.street && listing.city && listing.state && listing.postalCode) &&
+        Boolean(attomExt.county),
+    },
+    {
+      id: "bedsBaths",
+      label: "Beds & baths",
+      ready:
+        listing.property.beds.value != null && listing.property.baths.value != null,
+    },
+    {
+      id: "sqftLot",
+      label: "Sq ft & lot size",
+      ready:
+        listing.property.squareFeet.value != null &&
+        listing.property.lotSizeSqFt.value != null,
+    },
+    {
+      id: "hoa",
+      label: "HOA / condo info",
+      ready:
+        Boolean(
+          (answers as any).hoa_fees_amenities ||
+            attomExt.hoaName ||
+            attomExt.hoaFeeAmount != null,
+        ),
+    },
+    {
+      id: "taxes",
+      label: "Taxes & homestead",
+      ready:
+        listing.property.annualTaxes.value != null &&
+        (attomExt.taxYear != null || attomExt.homesteadExemption != null),
+    },
+    {
+      id: "schools",
+      label: "Schools summary",
+      ready: Boolean((answers as any).schools_summary),
+    },
+    {
+      id: "waterSewer",
+      label: "Water / sewer",
+      ready: Boolean((answers as any).water_sewer),
+    },
+    {
+      id: "remarks",
+      label: "MLS remarks",
+      ready: Boolean(ai?.mlsPublicRemarks?.standard),
+    },
+  ];
 
   // Best-effort mapping from ATTOM county to the correct Florida property appraiser site.
   const countyKey = (attomExt.county ?? "")
@@ -584,9 +649,12 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h2 className="font-semibold text-zinc-800">
                 MLS public remarks
               </h2>
-              <span className="text-[11px] text-zinc-500">
-                Copy into Stellar MLS (public remarks)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-zinc-500">
+                  Copy into Stellar MLS (public remarks)
+                </span>
+                {standardPublicRemarks && <CopyButton text={standardPublicRemarks} />}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -604,6 +672,11 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                         </div>
                         {text && <CopyButton text={text} />}
                       </div>
+                      {text && (
+                        <div className="text-[10px] text-zinc-500">
+                          {text.length.toLocaleString()} characters
+                        </div>
+                      )}
                       <p className="text-[11px] text-zinc-700 whitespace-pre-wrap">
                         {text || "Not generated"}
                       </p>
@@ -619,13 +692,17 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h2 className="font-semibold text-zinc-800">
                 MLS private remarks
               </h2>
-              {ai.mlsPrivateRemarks && (
-                <CopyButton text={ai.mlsPrivateRemarks} />
-              )}
+              {privateRemarks && <CopyButton text={privateRemarks} />}
             </div>
             <p className="text-[11px] text-zinc-700 whitespace-pre-wrap">
-              {ai.mlsPrivateRemarks || "Not generated"}
+              {privateRemarks || "Not generated"}
             </p>
+
+            {privateRemarks && (
+              <div className="mt-1 text-[10px] text-zinc-500">
+                {privateRemarks.length.toLocaleString()} characters
+              </div>
+            )}
 
             <div className="mt-3 space-y-1 text-[11px] text-zinc-500">
               <p>
@@ -638,9 +715,12 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           <section className="space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-xs">
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold text-zinc-800">Feature bullets</h2>
-              <span className="text-[11px] text-zinc-500">
-                Interior / exterior / community
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-zinc-500">
+                  Interior / exterior / community
+                </span>
+                {allFeaturesText && <CopyButton text={allFeaturesText} />}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -954,7 +1034,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold text-zinc-800">Stellar MLS fields</h2>
             <span className="text-[11px] text-zinc-500">
-              Read-only view; copy values into Stellar MLS
+              Read-only view; fields with a Copy button are ready to paste into Stellar MLS
             </span>
           </div>
 
@@ -987,6 +1067,35 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             >
               School zone search
             </a>
+          </div>
+
+          <p className="text-[11px] text-zinc-500">
+            Still review everything against your broker and Stellar MLS rules before you publish.
+          </p>
+
+          <div className="mt-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2">
+            <div className="mb-1 text-[11px] font-semibold text-zinc-700">
+              Stellar checklist (key areas)
+            </div>
+            <div className="grid gap-1 text-[11px] md:grid-cols-2 lg:grid-cols-3">
+              {mlsChecklist.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="text-zinc-600">{item.label}</span>
+                  <span
+                    className={
+                      item.ready
+                        ? "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700"
+                        : "inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                    }
+                  >
+                    {item.ready ? "Ready" : "Needs input"}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -1037,11 +1146,31 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   />
                 )}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                County: {attomExt.county ?? <span className="text-zinc-500">— (public record – verify)</span>}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  County: {attomExt.county ? (
+                    <>
+                      {attomExt.county}{" "}
+                      <span className="text-zinc-500">(public record – verify)</span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-500">— (public record – verify)</span>
+                  )}
+                </span>
+                {attomExt.county && <CopyButton text={attomExt.county} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Subdivision name: {attomExt.subdivision ?? <span className="text-zinc-500">— (public record – verify)</span>}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Subdivision name: {attomExt.subdivision ? (
+                    <>
+                      {attomExt.subdivision}{" "}
+                      <span className="text-zinc-500">(public record – verify)</span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-500">— (public record – verify)</span>
+                  )}
+                </span>
+                {attomExt.subdivision && <CopyButton text={attomExt.subdivision} />}
               </p>
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
                 <span>
@@ -1109,6 +1238,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               </p>
               <p className="text-[11px] text-zinc-600">
                 Living area (heated): {listing.property.squareFeet.value ?? "—"} sq ft (Public record)
+              </p>
+              <p className="text-[11px] text-zinc-600">
+                Year built: {listing.property.yearBuilt.value ?? "—"} (Public record)
               </p>
               <p className="text-[11px] text-zinc-600">
                 Total sq ft: <span className="text-zinc-500">— (agent to confirm)</span>
@@ -1224,24 +1356,38 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 )}
               </p>
               <p className="text-[11px] text-zinc-600">
-                HOA exists / name: {attomExt.hoaName ? (
-                  <>
-                    {attomExt.hoaName}{" "}
-                    <span className="text-zinc-500">(public record – verify)</span>
-                  </>
-                ) : (
-                  <span className="text-zinc-500">— (agent to enter)</span>
-                )}
+                <span>
+                  HOA exists / name: {attomExt.hoaName ? (
+                    <>
+                      {attomExt.hoaName}{" "}
+                      <span className="text-zinc-500">(public record – verify)</span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-500">— (agent to enter)</span>
+                  )}
+                </span>
+                {attomExt.hoaName && <CopyButton text={attomExt.hoaName} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                HOA fee amount / frequency: {attomExt.hoaFeeAmount != null ? (
-                  <>
-                    ${attomExt.hoaFeeAmount.toLocaleString()}
-                    {attomExt.hoaFeeFrequency ? ` (${attomExt.hoaFeeFrequency})` : ""}
-                    <span className="text-zinc-500"> (public record – verify)</span>
-                  </>
-                ) : (
-                  <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  HOA fee amount / frequency: {attomExt.hoaFeeAmount != null ? (
+                    <>
+                      ${attomExt.hoaFeeAmount.toLocaleString()}
+                      {attomExt.hoaFeeFrequency ? ` (${attomExt.hoaFeeFrequency})` : ""}
+                      <span className="text-zinc-500"> (public record – verify)</span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-500">— (agent to enter)</span>
+                  )}
+                </span>
+                {attomExt.hoaFeeAmount != null && (
+                  <CopyButton
+                    text={
+                      attomExt.hoaFeeFrequency
+                        ? `$${attomExt.hoaFeeAmount.toLocaleString()} ${attomExt.hoaFeeFrequency}`
+                        : `$${attomExt.hoaFeeAmount.toLocaleString()}`
+                    }
+                  />
                 )}
               </p>
               <p className="text-[11px] text-zinc-600">
@@ -1263,17 +1409,30 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <p className="text-[11px] text-zinc-600">
                 Price per sq ft: <span className="text-zinc-500">— (agent to calculate)</span>
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Annual taxes: {listing.property.annualTaxes.value ?? "—"} (Public record)
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Annual taxes: {listing.property.annualTaxes.value ?? "—"} (Public record)
+                </span>
+                {listing.property.annualTaxes.value != null && (
+                  <CopyButton text={String(listing.property.annualTaxes.value)} />
+                )}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Tax year: {attomExt.taxYear ?? "— (agent to confirm)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Tax year: {attomExt.taxYear ?? "— (agent to confirm)"}
+                </span>
+                {attomExt.taxYear && <CopyButton text={String(attomExt.taxYear)} />}
               </p>
               <p className="text-[11px] text-zinc-600">
                 CDD fees / special assessments: <span className="text-zinc-500">— (agent to enter; check tax bill)</span>
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Homestead exemption: {attomExt.homesteadExemption ?? "— (Yes/No)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Homestead exemption: {attomExt.homesteadExemption ?? "— (Yes/No)"}
+                </span>
+                {attomExt.homesteadExemption && (
+                  <CopyButton text={attomExt.homesteadExemption} />
+                )}
               </p>
             </div>
 
@@ -1293,15 +1452,18 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   <CopyButton text={answers.schools_summary} />
                 )}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Township / community name: {attomExt.subdivision ? (
-                  <>
-                    {attomExt.subdivision}{" "}
-                    <span className="text-zinc-500">(public record – verify)</span>
-                  </>
-                ) : (
-                  <span className="text-zinc-500">— (agent to enter)</span>
-                )}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>
+                  Township / community name: {attomExt.subdivision ? (
+                    <>
+                      {attomExt.subdivision}{" "}
+                      <span className="text-zinc-500">(public record – verify)</span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-500">— (agent to enter)</span>
+                  )}
+                </span>
+                {attomExt.subdivision && <CopyButton text={attomExt.subdivision} />}
               </p>
             </div>
 

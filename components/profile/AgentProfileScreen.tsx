@@ -280,7 +280,7 @@ export function AgentProfileScreen({ session }: AgentProfileScreenProps) {
                 Choose headshot file
               </label>
               <span className="text-[11px] text-zinc-500">
-                JPG or PNG, used on flyers and packets.
+                JPG or PNG, used on flyers and listing materials.
               </span>
               <input
                 id="headshot-upload"

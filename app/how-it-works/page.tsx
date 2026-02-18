@@ -16,8 +16,8 @@ export default function HowItWorksPage() {
               </h1>
               <p className="max-w-2xl text-sm text-zinc-600">
                 ListingLaunchAI gathers the data, asks the right questions, and assembles
-                MLS-ready copy, packets, flyers, and social content — so you can focus on
-                pricing, strategy, and your clients.
+                MLS-ready copy, structured MLS fields, and social-ready captions  so you
+                can focus on pricing, strategy, and your clients.
               </p>
             </div>
             <div className="text-sm text-zinc-600">
@@ -67,8 +67,9 @@ export default function HowItWorksPage() {
                 body: "Short, guided prompts capture upgrades, views, community perks, and open house details.",
               },
               {
-                title: "Generate MLS copy & PDFs",
-                body: "Get MLS-ready remarks, highlight bullets, and a professional listing packet PDF.",
+                title: "Generate MLS copy & summaries",
+                body:
+                  "Get MLS-ready remarks, highlight bullets, and a structured summary you can use while you enter details into the MLS.",
               },
               {
                 title: "Create flyers & social",

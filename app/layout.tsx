@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ListingLaunch AI",
   description:
-    "Generate MLS-ready listing packets, open house flyers, and SMS lead capture for Stellar MLS from a single property intake.",
+    "Generate MLS-ready data, open house flyers, and SMS lead capture for Stellar MLS from a single property intake.",
   icons: {
     icon: [
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },

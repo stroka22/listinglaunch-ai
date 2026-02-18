@@ -15,7 +15,7 @@ export default function MarketingPage() {
             </h1>
             <p className="max-w-xl text-sm text-zinc-600">
               ListingLaunchAI helps you gather property data, verify key details, and
-              prepare MLS-ready copy, packets, and flyers — so agents don&apos;t miss
+              prepare MLS-ready copy and structured MLS fields  so agents don&apos;t miss
               details or waste time.
             </p>
 
@@ -111,8 +111,9 @@ export default function MarketingPage() {
                 body: "Florida disclosures are prepared from seller responses — never auto-answered.",
               },
               {
-                title: "Generate MLS copy & PDFs",
-                body: "You get MLS-ready remarks plus branded packet and presentation PDFs.",
+                title: "Generate MLS copy & summaries",
+                body:
+                  "You get MLS-ready remarks plus highlight bullets and a structured summary you can use in your own presentations.",
               },
               {
                 title: "Review & launch",

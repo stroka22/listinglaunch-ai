@@ -96,7 +96,7 @@ export default function MarketingPage() {
             Stellar MLS agents in Florida.
           </p>
 
-          <div className="grid gap-3 md:grid-cols-5 text-sm">
+          <div className="grid gap-3 md:grid-cols-4 text-sm">
             {[
               {
                 title: "Enter the property address",
@@ -114,10 +114,6 @@ export default function MarketingPage() {
                 title: "Generate MLS copy & summaries",
                 body:
                   "You get MLS-ready remarks plus highlight bullets and a structured summary you can use in your own presentations.",
-              },
-              {
-                title: "Review & launch",
-                body: "Confidence indicators help you catch gaps before publishing.",
               },
             ].map((step, idx) => (
               <div

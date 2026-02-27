@@ -519,28 +519,117 @@ export function NewListingWizard({ agentId, onCreated }: NewListingWizardProps) 
             <div className="text-xs font-medium text-zinc-600">
               3. Smart questions wizard
             </div>
-            <div className="space-y-2 max-h-72 overflow-auto rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2">
-              {SMART_QUESTIONS.map((q) => (
-                <div key={q.id} className="space-y-1">
-                  <label className="block text-[11px] font-medium text-zinc-700">
-                    {q.label}
-                  </label>
-                  {q.helper && (
-                    <p className="text-[11px] text-zinc-500">{q.helper}</p>
-                  )}
-                  <textarea
-                    rows={2}
-                    value={answers[q.id] ?? ""}
-                    onChange={(e) =>
-                      setAnswers((prev) => ({
-                        ...prev,
-                        [q.id]: e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-black/60"
-                  />
-                </div>
-              ))}
+            <div className="space-y-2 max-h-[32rem] overflow-auto rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2">
+              {SMART_QUESTIONS.map((q) => {
+                const currentVal = answers[q.id] ?? "";
+                const selectedSet = new Set(
+                  currentVal ? currentVal.split(", ").filter(Boolean) : [],
+                );
+
+                if (q.type === "single_select" && q.options) {
+                  return (
+                    <div key={q.id} className="space-y-1">
+                      <label className="block text-[11px] font-medium text-zinc-700">
+                        {q.label}
+                      </label>
+                      {q.helper && (
+                        <p className="text-[11px] text-zinc-500">{q.helper}</p>
+                      )}
+                      <select
+                        value={currentVal}
+                        onChange={(e) =>
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [q.id]: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-black/60"
+                      >
+                        <option value="">— Select —</option>
+                        {q.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+
+                if (q.type === "multi_select" && q.options) {
+                  return (
+                    <div key={q.id} className="space-y-1">
+                      <label className="block text-[11px] font-medium text-zinc-700">
+                        {q.label}
+                      </label>
+                      {q.helper && (
+                        <p className="text-[11px] text-zinc-500">{q.helper}</p>
+                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {q.options.map((opt) => {
+                          const isSelected = selectedSet.has(opt);
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => {
+                                const next = new Set(selectedSet);
+                                if (isSelected) next.delete(opt);
+                                else next.add(opt);
+                                setAnswers((prev) => ({
+                                  ...prev,
+                                  [q.id]: Array.from(next).join(", "),
+                                }));
+                              }}
+                              className={`rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
+                                isSelected
+                                  ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                  : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-100"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <textarea
+                        rows={1}
+                        placeholder="Additional details (optional)"
+                        value={answers[`${q.id}_extra`] ?? ""}
+                        onChange={(e) =>
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [`${q.id}_extra`]: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-black/60"
+                      />
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={q.id} className="space-y-1">
+                    <label className="block text-[11px] font-medium text-zinc-700">
+                      {q.label}
+                    </label>
+                    {q.helper && (
+                      <p className="text-[11px] text-zinc-500">{q.helper}</p>
+                    )}
+                    <textarea
+                      rows={2}
+                      value={currentVal}
+                      onChange={(e) =>
+                        setAnswers((prev) => ({
+                          ...prev,
+                          [q.id]: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-black/60"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
 

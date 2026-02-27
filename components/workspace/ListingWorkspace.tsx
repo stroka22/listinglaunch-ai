@@ -502,14 +502,24 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
         listing.property.lotSizeSqFt.value != null,
     },
     {
+      id: "interior",
+      label: "Interior features",
+      ready: Boolean(answers.interior_features || answers.appliances || answers.flooring),
+    },
+    {
+      id: "exterior",
+      label: "Exterior & parking",
+      ready: Boolean(answers.exterior_features || answers.parking_garage || attomExt.parkingType),
+    },
+    {
+      id: "construction",
+      label: "Construction & roof",
+      ready: Boolean(answers.construction_materials || attomExt.constructionWallType || answers.roof_type_age || attomExt.roofType),
+    },
+    {
       id: "hoa",
       label: "HOA / condo info",
-      ready:
-        Boolean(
-          (answers as any).hoa_fees_amenities ||
-            attomExt.hoaName ||
-            attomExt.hoaFeeAmount != null,
-        ),
+      ready: Boolean(answers.hoa_fees_amenities || answers.hoa_restrictions || attomExt.hoaName || attomExt.hoaFeeAmount != null),
     },
     {
       id: "taxes",
@@ -519,14 +529,19 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
         (attomExt.taxYear != null || attomExt.homesteadExemption != null),
     },
     {
-      id: "schools",
-      label: "Schools summary",
-      ready: Boolean((answers as any).schools_summary),
+      id: "utilities",
+      label: "Utilities & systems",
+      ready: Boolean(answers.water_sewer || answers.hvac_type_age || answers.electric_provider),
     },
     {
-      id: "waterSewer",
-      label: "Water / sewer",
-      ready: Boolean((answers as any).water_sewer),
+      id: "schools",
+      label: "Schools summary",
+      ready: Boolean(answers.schools_summary),
+    },
+    {
+      id: "showing",
+      label: "Showing & lockbox",
+      ready: Boolean(answers.showing_instructions || answers.lockbox_type),
     },
     {
       id: "remarks",
@@ -1106,8 +1121,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               </h3>
               <p className="text-[11px] text-zinc-600">Listing ID (system): {listing.id}</p>
               <p className="text-[11px] text-zinc-600">Listing status: {listing.status}</p>
-              <p className="text-[11px] text-zinc-600">
-                Listing agreement type: <span className="text-zinc-500">— (agent to select)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Listing agreement type: {answers.listing_agreement_type || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.listing_agreement_type && <CopyButton text={answers.listing_agreement_type} />}
               </p>
               <p className="text-[11px] text-zinc-600">
                 Listing date: {new Date(listing.createdAt).toLocaleDateString()}
@@ -1188,8 +1204,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   <CopyButton text={String(listing.property.parcelId.value)} />
                 )}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Directions / driving instructions: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Directions: {answers.directions || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.directions && <CopyButton text={answers.directions} />}
               </p>
             </div>
 
@@ -1198,24 +1215,29 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h3 className="text-[11px] font-semibold text-zinc-700">
                 C. Property Classification
               </h3>
-              <p className="text-[11px] text-zinc-600">
-                Property type: {listing.property.propertyType.value ?? "—"} (Public record)
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Property type: {listing.property.propertyType.value ?? "—"} (Public record)</span>
+                {listing.property.propertyType.value && <CopyButton text={String(listing.property.propertyType.value)} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Property subtype: <span className="text-zinc-500">— (agent to select)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Property subtype: {answers.property_subtype || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.property_subtype && <CopyButton text={answers.property_subtype} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Ownership: <span className="text-zinc-500">— (Fee Simple / Leasehold)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Ownership: {answers.ownership_type || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.ownership_type && <CopyButton text={answers.ownership_type} />}
               </p>
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
                 <span>Zoning: {attomExt.zoning ?? "— (agent to enter)"}</span>
                 {attomExt.zoning && <CopyButton text={attomExt.zoning} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Total sq ft: {attomExt.totalSquareFeet ?? "— (agent to confirm)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Total sq ft: {attomExt.totalSquareFeet ?? "— (agent to confirm)"}</span>
+                {attomExt.totalSquareFeet && <CopyButton text={String(attomExt.totalSquareFeet)} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Stories / levels: {attomExt.stories ?? "— (agent to enter)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Stories / levels: {attomExt.stories ?? "— (agent to enter)"}</span>
+                {attomExt.stories && <CopyButton text={attomExt.stories} />}
               </p>
               <p className="text-[11px] text-zinc-600">
                 Builder name: <span className="text-zinc-500">— (if applicable)</span>
@@ -1259,86 +1281,91 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             {/* E. Interior Features */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">E. Interior Features</h3>
-              <p className="text-[11px] text-zinc-600">
-                Flooring types: {answers.flooring || "— (from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Flooring: {answers.flooring || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.flooring && <CopyButton text={answers.flooring} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Interior features: {answers.key_upgrades || "— (walk-in closets, upgrades, etc.)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Interior features: {answers.interior_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.interior_features && <CopyButton text={answers.interior_features} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Appliances included: {answers.appliances || "— (from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Appliances: {answers.appliances || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.appliances && <CopyButton text={answers.appliances} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Laundry features: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Laundry: {answers.laundry_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.laundry_features && <CopyButton text={answers.laundry_features} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Window features: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Windows: {answers.window_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.window_features && <CopyButton text={answers.window_features} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Fireplace: <span className="text-zinc-500">— (Yes/No + type)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Fireplace: {answers.fireplace ?? (attomExt.fireplaceType && !/yes/i.test(attomExt.fireplaceType) ? attomExt.fireplaceType : null) ?? <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.fireplace || attomExt.fireplaceType) && <CopyButton text={answers.fireplace || attomExt.fireplaceType || ""} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Accessibility features: <span className="text-zinc-500">— (if any)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Accessibility: {answers.accessibility_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.accessibility_features && <CopyButton text={answers.accessibility_features} />}
+              </p>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Key upgrades: {answers.key_upgrades || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.key_upgrades && <CopyButton text={answers.key_upgrades} />}
               </p>
             </div>
 
             {/* F. Exterior Features */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">F. Exterior Features</h3>
-              <p className="text-[11px] text-zinc-600">
-                Roof type: {answers.roof_type_age || "— (from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Roof: {answers.roof_type_age || (attomExt.roofType ? `${attomExt.roofType} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.roof_type_age || attomExt.roofType) && <CopyButton text={answers.roof_type_age || attomExt.roofType || ""} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Construction materials: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Construction: {answers.construction_materials || (attomExt.constructionWallType ? `${attomExt.constructionWallType} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.construction_materials || attomExt.constructionWallType) && <CopyButton text={answers.construction_materials || attomExt.constructionWallType || ""} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Foundation type: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Foundation: {answers.foundation_type || (attomExt.foundationType ?? null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.foundation_type || attomExt.foundationType) && <CopyButton text={answers.foundation_type || attomExt.foundationType || ""} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Exterior features: {answers.pool_waterfront_garage || "— (lanai, pool, fence, etc.)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Exterior features: {answers.exterior_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.exterior_features && <CopyButton text={answers.exterior_features} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Pool / waterfront / view: {answers.pool_waterfront_garage || "— (from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Pool / waterfront: {answers.pool_waterfront_garage || (attomExt.poolType ? `${attomExt.poolType} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.pool_waterfront_garage || attomExt.poolType) && <CopyButton text={answers.pool_waterfront_garage || attomExt.poolType || ""} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Lot features: {attomExt.lotFeatures ?? <span className="text-zinc-500">— (agent to enter)</span>}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Lot features: {answers.lot_features || (attomExt.lotFeatures ?? null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.lot_features || attomExt.lotFeatures) && <CopyButton text={answers.lot_features || attomExt.lotFeatures || ""} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Parking / garage / carport: {attomExt.parkingSpaces != null || attomExt.parkingType ? (
-                  <>
-                    {attomExt.parkingSpaces != null && (
-                      <>
-                        {attomExt.parkingSpaces} spaces
-                        {attomExt.parkingType ? " • " : ""}
-                      </>
-                    )}
-                    {attomExt.parkingType ?? ""}
-                    {" "}
-                    <span className="text-zinc-500">(public record – verify)</span>
-                  </>
-                ) : (
-                  <span className="text-zinc-500">— (agent to enter)</span>
-                )}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Parking / garage: {answers.parking_garage || (attomExt.parkingType ? `${attomExt.parkingType}${attomExt.parkingSpaces != null ? ` (${attomExt.parkingSpaces} spaces)` : ""} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.parking_garage || attomExt.parkingType) && <CopyButton text={answers.parking_garage || attomExt.parkingType || ""} />}
               </p>
             </div>
 
             {/* G. Utilities & Systems */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">G. Utilities & Systems</h3>
-              <p className="text-[11px] text-zinc-600">
-                Heating / cooling: {answers.hvac_type_age || "— (from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Heating / cooling: {answers.hvac_type_age || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.hvac_type_age && <CopyButton text={answers.hvac_type_age} />}
               </p>
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Water / sewer: {answers.water_sewer || "— (from smart question)"}</span>
-                {answers.water_sewer && (
-                  <CopyButton text={answers.water_sewer} />
-                )}
+                <span>Water heater: {answers.water_heater || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.water_heater && <CopyButton text={answers.water_heater} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Utilities included: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Water / sewer: {answers.water_sewer || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.water_sewer && <CopyButton text={answers.water_sewer} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Electric provider / gas: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Electric / gas provider: {answers.electric_provider || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.electric_provider && <CopyButton text={answers.electric_provider} />}
               </p>
             </div>
 
@@ -1390,11 +1417,13 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   />
                 )}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                CDD / condo association: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>HOA restrictions: {answers.hoa_restrictions || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.hoa_restrictions && <CopyButton text={answers.hoa_restrictions} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                HOA restrictions / approval: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Community amenities: {answers.community_amenities || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.community_amenities && <CopyButton text={answers.community_amenities} />}
               </p>
             </div>
 
@@ -1403,11 +1432,14 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h3 className="text-[11px] font-semibold text-zinc-700">
                 I. Financial & Tax Info
               </h3>
-              <p className="text-[11px] text-zinc-600">
-                List price: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>List price: {answers.list_price ? `$${Number(answers.list_price).toLocaleString()}` : <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.list_price && <CopyButton text={answers.list_price} />}
               </p>
               <p className="text-[11px] text-zinc-600">
-                Price per sq ft: <span className="text-zinc-500">— (agent to calculate)</span>
+                Price per sq ft: {answers.list_price && listing.property.squareFeet.value
+                  ? `$${(Number(answers.list_price) / Number(listing.property.squareFeet.value)).toFixed(2)}`
+                  : <span className="text-zinc-500">— (needs list price & sq ft)</span>}
               </p>
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
                 <span>
@@ -1439,8 +1471,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             {/* J. Location & Area */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">J. Location & Area</h3>
-              <p className="text-[11px] text-zinc-600">
-                Flood zone / FEMA panel: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Flood zone: {answers.flood_zone || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.flood_zone && <CopyButton text={answers.flood_zone} />}
               </p>
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
                 <span>
@@ -1481,11 +1514,17 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <p className="text-[11px] text-zinc-600">
                 Additional features / bullets: <span className="text-zinc-500">— (see MLS Copy tab)</span>
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Showing instructions: {answers.showing_instructions || "— (from smart question)"}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Showing instructions: {answers.showing_instructions || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.showing_instructions && <CopyButton text={answers.showing_instructions} />}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Showing restrictions / lockbox: <span className="text-zinc-500">— (agent to enter)</span>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Lockbox: {answers.lockbox_type || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {answers.lockbox_type && <CopyButton text={answers.lockbox_type} />}
+              </p>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Occupancy: {answers.occupancy_status || (attomExt.absenteeOwner ?? null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
+                {(answers.occupancy_status || attomExt.absenteeOwner) && <CopyButton text={answers.occupancy_status || attomExt.absenteeOwner || ""} />}
               </p>
             </div>
 

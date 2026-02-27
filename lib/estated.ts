@@ -215,6 +215,7 @@ export function deriveSmartWizardDefaultsFromRaw(
 
   const yearBuilt: number | undefined = summary.yearBuilt;
 
+  // Roof
   const roofCover: string | undefined = construction.roofCover;
   const roofShape: string | undefined = construction.roofShape;
   const roofParts: string[] = [];
@@ -225,6 +226,7 @@ export function deriveSmartWizardDefaultsFromRaw(
     result.roof_type_age = `${roofParts.join(", ")} (per public record; buyer to verify).`;
   }
 
+  // HVAC
   const coolingType: string | undefined = utilities.coolingType;
   const heatingType: string | undefined = utilities.heatingType;
   const heatingFuel: string | undefined = utilities.heatingFuel;
@@ -236,84 +238,183 @@ export function deriveSmartWizardDefaultsFromRaw(
     result.hvac_type_age = `${hvacParts.join(", ")} (per public record; buyer to verify).`;
   }
 
-  // Water / sewer convenience string where ATTOM exposes utility providers
-  const water:
-    | string
-    | undefined =
-    utilities.waterType ??
-    utilities.water ??
-    utilities.wtrSup ??
-    utilities.waterSource ??
-    utilities.waterSupply;
-  const sewer:
-    | string
-    | undefined =
-    utilities.sewerType ??
-    utilities.sewer ??
-    utilities.swrSup ??
-    utilities.sewerSource ??
-    utilities.sewerSupply;
+  // Water / sewer
+  const water: string | undefined =
+    utilities.waterType ?? utilities.water ?? utilities.wtrSup ??
+    utilities.waterSource ?? utilities.waterSupply;
+  const sewer: string | undefined =
+    utilities.sewerType ?? utilities.sewer ?? utilities.swrSup ??
+    utilities.sewerSource ?? utilities.sewerSupply;
 
-  const waterSewerParts: string[] = [];
-  if (water) waterSewerParts.push(`Water: ${water}`);
-  if (sewer) waterSewerParts.push(`Sewer: ${sewer}`);
-  if (waterSewerParts.length) {
-    result.water_sewer = `${waterSewerParts.join("; ")} (per public record; buyer to verify with utility providers).`;
+  const waterSewerSelections: string[] = [];
+  if (water) {
+    if (/public|city|municipal/i.test(water)) waterSewerSelections.push("Public Water");
+    else if (/well/i.test(water)) waterSewerSelections.push("Well Water");
+  }
+  if (sewer) {
+    if (/public|city|municipal/i.test(sewer)) waterSewerSelections.push("Public Sewer");
+    else if (/septic/i.test(sewer)) waterSewerSelections.push("Septic Tank");
+  }
+  if (waterSewerSelections.length) {
+    result.water_sewer = waterSewerSelections.join(", ");
   }
 
-  const floors: string | undefined = interior.floors;
+  // Construction / wall material
+  const wallType: string | undefined = construction.wallType ?? construction.exteriorWalls;
+  if (wallType) {
+    const wallMap: Record<string, string> = {
+      block: "Block/Concrete",
+      concrete: "Block/Concrete",
+      stucco: "Stucco",
+      brick: "Brick",
+      frame: "Frame/Wood",
+      wood: "Frame/Wood",
+      vinyl: "Vinyl Siding",
+      hardie: "HardiePlank/Cement Fiber",
+      cement: "HardiePlank/Cement Fiber",
+      stone: "Stone",
+    };
+    const wallLower = wallType.toLowerCase();
+    const matched = Object.entries(wallMap).find(([k]) => wallLower.includes(k));
+    if (matched) {
+      result.construction_materials = matched[1];
+    } else {
+      result.construction_materials = wallType;
+    }
+  }
+
+  // Foundation
+  const foundationType: string | undefined =
+    construction.foundationType ?? construction.foundation;
+  if (foundationType) {
+    const fLower = foundationType.toLowerCase();
+    if (fLower.includes("slab")) result.foundation_type = "Slab";
+    else if (fLower.includes("crawl")) result.foundation_type = "Crawl Space";
+    else if (fLower.includes("basement")) result.foundation_type = "Basement";
+    else if (fLower.includes("pil") || fLower.includes("stilt")) result.foundation_type = "Pilings/Stilts";
+    else result.foundation_type = foundationType;
+  }
+
+  // Flooring
+  const floors: string | undefined = interior.floors ?? interior.floorType;
   if (floors) {
-    result.flooring = `${floors} flooring (per public record; buyer to verify rooms and coverage).`;
+    const floorMap: Record<string, string> = {
+      tile: "Tile",
+      hardwood: "Hardwood",
+      laminate: "Laminate",
+      vinyl: "Luxury Vinyl Plank (LVP)",
+      carpet: "Carpet",
+      marble: "Marble",
+      terrazzo: "Terrazzo",
+      concrete: "Concrete",
+    };
+    const floorLower = floors.toLowerCase();
+    const matched: string[] = [];
+    for (const [k, v] of Object.entries(floorMap)) {
+      if (floorLower.includes(k)) matched.push(v);
+    }
+    if (matched.length) {
+      result.flooring = matched.join(", ");
+    } else {
+      result.flooring = floors;
+    }
   }
 
+  // Fireplace
+  const fplcInd: string | undefined = interior.fplcInd;
+  const fplcType: string | undefined = interior.fplcType;
+  if (fplcInd && /^y/i.test(fplcInd)) {
+    if (fplcType && !/yes/i.test(fplcType)) {
+      const tl = fplcType.toLowerCase();
+      if (tl.includes("gas")) result.fireplace = "Gas";
+      else if (tl.includes("wood")) result.fireplace = "Wood Burning";
+      else if (tl.includes("electric")) result.fireplace = "Electric";
+      else result.fireplace = "Wood Burning";
+    } else {
+      result.fireplace = "Wood Burning";
+    }
+  } else if (fplcInd && /^n/i.test(fplcInd)) {
+    result.fireplace = "None";
+  }
+
+  // Pool / waterfront / garage
   const poolType: string | undefined = lot.poolType;
   const view: string | undefined = buildingSummary.view;
-  const prkgSpaces: string | number | undefined = parking.prkgSpaces;
-  const exteriorParts: string[] = [];
-  if (poolType) exteriorParts.push(`Pool: ${poolType}`);
-  if (view && !/none/i.test(view)) exteriorParts.push(`View: ${view}`);
-  if (prkgSpaces != null && prkgSpaces !== "") {
-    exteriorParts.push(`Garage/Parking: ${prkgSpaces} spaces (per public record)`);
+  const prkgType: string | undefined = parking.prkgType ?? parking.parkingType;
+  const prkgSize: number | undefined = parking.prkgSize;
+  const garageType: string | undefined = parking.garageType;
+
+  const poolSelections: string[] = [];
+  if (poolType) {
+    if (/no pool|none/i.test(poolType)) poolSelections.push("No Pool");
+    else {
+      poolSelections.push("In-ground Pool");
+      if (/screen/i.test(poolType)) poolSelections.push("Screened Pool");
+      if (/heat/i.test(poolType)) poolSelections.push("Heated Pool");
+      if (/salt/i.test(poolType)) poolSelections.push("Saltwater Pool");
+    }
   }
-  if (exteriorParts.length) {
-    result.pool_waterfront_garage = `${exteriorParts.join("; ")} (buyer to verify).`;
+  if (view && /water|lake|pond|canal/i.test(view)) poolSelections.push("Pond/Lake View");
+  if (view && !/none/i.test(view) && /waterfront/i.test(view)) poolSelections.push("Waterfront");
+  if (poolSelections.length) {
+    result.pool_waterfront_garage = poolSelections.join(", ");
   }
 
-  // HOA / community summary from association data if available
+  // Parking / garage
+  const parkingSelections: string[] = [];
+  const garageStr = (garageType ?? prkgType ?? "").toLowerCase();
+  if (garageStr) {
+    if (garageStr.includes("attached")) parkingSelections.push("Attached Garage");
+    else if (garageStr.includes("detach")) parkingSelections.push("Detached Garage");
+    else if (garageStr.includes("carport")) parkingSelections.push("Carport");
+    else if (garageStr.includes("garage")) parkingSelections.push("Attached Garage");
+
+    if (prkgSize != null) {
+      const spaces = Math.round(prkgSize / 200);
+      if (spaces >= 3) parkingSelections.push("3-car Garage");
+      else if (spaces >= 2) parkingSelections.push("2-car Garage");
+      else if (spaces >= 1) parkingSelections.push("1-car Garage");
+    }
+  }
+  if (parkingSelections.length) {
+    result.parking_garage = parkingSelections.join(", ");
+  }
+
+  // HOA / community summary
   const assocName: string | undefined =
-    (association.name as string | undefined) ??
-    (association.assocName as string | undefined) ??
-    (association.associationName as string | undefined) ??
-    (association.hoaName as string | undefined);
-
+    association.name ?? association.assocName ??
+    association.associationName ?? association.hoaName;
   const assocFees: number | string | undefined =
-    (association.assocFees as number | string | undefined) ??
-    (association.fees as number | string | undefined) ??
-    (association.associationFee as number | string | undefined) ??
-    (association.hoaFee as number | string | undefined);
-
+    association.assocFees ?? association.fees ??
+    association.associationFee ?? association.hoaFee;
   const assocFeesFreq: string | undefined =
-    (association.assocFeesFreq as string | undefined) ??
-    (association.feeFrequency as string | undefined) ??
-    (association.associationFeeFrequency as string | undefined) ??
-    (association.hoaFeeFreq as string | undefined);
+    association.assocFeesFreq ?? association.feeFrequency ??
+    association.associationFeeFrequency ?? association.hoaFeeFreq;
 
   const hoaParts: string[] = [];
   if (assocName) hoaParts.push(`HOA/Condo: ${assocName}`);
   if (assocFees != null && `${assocFees}`.trim() !== "") {
-    const amt =
-      typeof assocFees === "number"
-        ? assocFees.toLocaleString()
-        : String(assocFees);
-    if (assocFeesFreq) {
-      hoaParts.push(`Fees: $${amt} (${assocFeesFreq})`);
-    } else {
-      hoaParts.push(`Fees: $${amt}`);
-    }
+    const amt = typeof assocFees === "number" ? assocFees.toLocaleString() : String(assocFees);
+    if (assocFeesFreq) hoaParts.push(`Fees: $${amt} (${assocFeesFreq})`);
+    else hoaParts.push(`Fees: $${amt}`);
   }
-
   if (hoaParts.length) {
     result.hoa_fees_amenities = `${hoaParts.join("; ")} (per public record/association; buyer to verify).`;
+  }
+
+  // Stories / levels
+  const stories: string | number | undefined =
+    buildingSummary.levels ?? buildingSummary.stories ?? buildingSummary.storyDesc;
+  if (stories != null) {
+    result._stories = String(stories);
+  }
+
+  // Occupancy
+  const absenteeInd: string | undefined = summary.absenteeInd;
+  if (absenteeInd) {
+    if (/owner\s*occupied/i.test(absenteeInd)) result.occupancy_status = "Owner Occupied";
+    else if (/tenant|renter|rental/i.test(absenteeInd)) result.occupancy_status = "Tenant Occupied";
+    else if (/vacant/i.test(absenteeInd)) result.occupancy_status = "Vacant";
   }
 
   return result;
@@ -328,12 +429,22 @@ export interface AttomExtendedFields {
   stories: string | null;
   taxYear: number | null;
   homesteadExemption: string | null;
-   parkingSpaces: number | null;
-   parkingType: string | null;
-   lotFeatures: string | null;
-   hoaName: string | null;
-   hoaFeeAmount: number | null;
-   hoaFeeFrequency: string | null;
+  parkingSpaces: number | null;
+  parkingType: string | null;
+  lotFeatures: string | null;
+  hoaName: string | null;
+  hoaFeeAmount: number | null;
+  hoaFeeFrequency: string | null;
+  constructionWallType: string | null;
+  foundationType: string | null;
+  roofType: string | null;
+  fireplaceType: string | null;
+  fireplaceCount: number | null;
+  poolType: string | null;
+  coolingType: string | null;
+  heatingType: string | null;
+  heatingFuel: string | null;
+  absenteeOwner: string | null;
 }
 
 export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
@@ -352,6 +463,16 @@ export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
     hoaName: null,
     hoaFeeAmount: null,
     hoaFeeFrequency: null,
+    constructionWallType: null,
+    foundationType: null,
+    roofType: null,
+    fireplaceType: null,
+    fireplaceCount: null,
+    poolType: null,
+    coolingType: null,
+    heatingType: null,
+    heatingFuel: null,
+    absenteeOwner: null,
   };
 
   const data = raw as any;
@@ -474,6 +595,45 @@ export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
      (association.associationFeeFrequency as string | undefined) ??
      (association.hoaFeeFreq as string | undefined) ??
      null;
+
+  // Construction / wall type
+  const construction = building.construction ?? {};
+  result.constructionWallType =
+    (construction.wallType as string | undefined) ??
+    (construction.exteriorWalls as string | undefined) ??
+    null;
+
+  result.foundationType =
+    (construction.foundationType as string | undefined) ??
+    (construction.foundation as string | undefined) ??
+    null;
+
+  const roofCover = (construction.roofCover as string | undefined);
+  const roofShape = (construction.roofShape as string | undefined);
+  const roofParts: string[] = [];
+  if (roofCover) roofParts.push(roofCover);
+  if (roofShape) roofParts.push(roofShape);
+  result.roofType = roofParts.length ? roofParts.join(", ") : null;
+
+  // Fireplace
+  const interior = building.interior ?? {};
+  result.fireplaceType =
+    (interior.fplcType as string | undefined) ?? null;
+  const fplcCount = interior.fplcCount as number | undefined;
+  result.fireplaceCount = fplcCount ?? null;
+
+  // Pool
+  result.poolType =
+    (lot.poolType as string | undefined) ?? null;
+
+  // Utilities
+  const utilities = property.utilities ?? {};
+  result.coolingType = (utilities.coolingType as string | undefined) ?? null;
+  result.heatingType = (utilities.heatingType as string | undefined) ?? null;
+  result.heatingFuel = (utilities.heatingFuel as string | undefined) ?? null;
+
+  // Occupancy
+  result.absenteeOwner = (summary.absenteeInd as string | undefined) ?? null;
 
   return result;
 }

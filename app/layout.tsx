@@ -49,9 +49,17 @@ export default function RootLayout({
                 priority
               />
             </Link>
-            <span className="text-xs text-zinc-500">
-              MLS-ready launch prep for Stellar MLS agents in Florida
-            </span>
+            <div className="flex items-center gap-4">
+              <span className="hidden text-xs text-zinc-500 sm:inline">
+                MLS-ready launch prep for Stellar MLS agents in Florida
+              </span>
+              <Link
+                href="/app"
+                className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+              >
+                Sign in
+              </Link>
+            </div>
           </header>
           <main className="flex-1 bg-zinc-50">{children}</main>
         </div>

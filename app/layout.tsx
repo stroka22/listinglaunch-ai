@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthHeaderButton } from "@/components/AuthHeaderButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -53,12 +54,7 @@ export default function RootLayout({
               <span className="hidden text-xs text-zinc-500 sm:inline">
                 MLS-ready launch prep for Stellar MLS agents in Florida
               </span>
-              <Link
-                href="/app"
-                className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
-              >
-                My account
-              </Link>
+              <AuthHeaderButton />
             </div>
           </header>
           <main className="flex-1 bg-zinc-50">{children}</main>

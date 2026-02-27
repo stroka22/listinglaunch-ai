@@ -50,6 +50,7 @@ export async function lookupPropertyFromEstated(
 
   async function fetchProfile(endpoint: "expandedprofile" | "basicprofile") {
     const url = `https://api.gateway.attomdata.com/propertyapi/v1.0.0/property/${endpoint}?${params.toString()}`;
+    console.log(`[ATTOM] calling ${endpoint} — key starts with "${(apiKey as string).substring(0, 6)}…" — url: ${url}`);
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -60,6 +61,7 @@ export async function lookupPropertyFromEstated(
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
+      console.error(`[ATTOM] ${endpoint} failed: ${res.status} ${res.statusText} — body: ${text.substring(0, 300)}`);
       return {
         ok: false as const,
         status: res.status,
@@ -69,6 +71,7 @@ export async function lookupPropertyFromEstated(
     }
 
     const json = (await res.json()) as any;
+    console.log(`[ATTOM] ${endpoint} succeeded — status ${res.status}`);
     return { ok: true as const, json };
   }
 

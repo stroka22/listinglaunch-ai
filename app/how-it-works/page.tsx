@@ -52,7 +52,7 @@ export default function HowItWorksPage() {
             research, structure, and first drafts.
           </p>
 
-          <div className="grid gap-3 text-sm md:grid-cols-5">
+          <div className="grid gap-3 text-sm md:grid-cols-4">
             {[ 
               {
                 title: "Start with the address",
@@ -70,10 +70,6 @@ export default function HowItWorksPage() {
                 title: "Generate MLS copy & summaries",
                 body:
                   "Get MLS-ready remarks, highlight bullets, and a structured summary you can use while you enter details into the MLS.",
-              },
-              {
-                title: "Create flyers & social",
-                body: "Download agent-only and agent+lender flyers, then turn them into social posts in a few clicks.",
               },
             ].map((step, idx) => (
               <div

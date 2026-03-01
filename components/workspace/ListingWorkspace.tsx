@@ -746,7 +746,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
   const flAppraisers: Record<string, string> = {
     hillsborough: "https://www.hcpafl.org",
-    pasco: "https://search.pascopa.com/propertysearch",
+    pasco: "https://pascopa.com",
     pinellas: "https://www.pcpao.gov",
     polk: "https://www.polkpa.org",
     hernando: "https://www.hernandocounty.us/departments/departments-a-e/property-appraiser",

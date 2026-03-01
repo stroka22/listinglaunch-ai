@@ -492,13 +492,17 @@ export function deriveExtendedFieldsFromRaw(raw: unknown): AttomExtendedFields {
 
   const result: AttomExtendedFields = { ...base };
 
+  const area = property.area ?? {};
   result.county =
     (location.county as string | undefined) ??
+    (area.countrySecSubd as string | undefined) ??
+    (area.countyName as string | undefined) ??
     (summary.county as string | undefined) ??
     null;
 
   result.subdivision =
     (summary.subdivision as string | undefined) ??
+    (area.subdName as string | undefined) ??
     (lot.subdName as string | undefined) ??
     (lot.subdivision as string | undefined) ??
     null;

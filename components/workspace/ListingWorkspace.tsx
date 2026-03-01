@@ -9,6 +9,7 @@ import {
   updateDisclosureAnswer,
 } from "@/lib/disclosures_fl";
 import { deriveExtendedFieldsFromRaw } from "@/lib/estated";
+import { countyFromZip } from "@/lib/fl-zip-county";
 
 interface ListingWorkspaceProps {
   listingId: string;
@@ -663,13 +664,18 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
 
   const attomExt = deriveExtendedFieldsFromRaw(listing.estatedRaw ?? null);
 
+  // Resolve county: ATTOM first, then zip-code fallback for FL properties
+  const resolvedCounty =
+    attomExt.county ||
+    (listing.state.toUpperCase() === "FL" ? countyFromZip(listing.postalCode) : null);
+
   const mlsChecklist = [
     {
       id: "address",
       label: "Address & legal",
       ready:
         Boolean(listing.street && listing.city && listing.state && listing.postalCode) &&
-        Boolean(attomExt.county),
+        Boolean(resolvedCounty),
     },
     {
       id: "bedsBaths",
@@ -733,8 +739,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
     },
   ];
 
-  // Best-effort mapping from ATTOM county to the correct Florida property appraiser site.
-  const countyKey = (attomExt.county ?? "")
+  const countyKey = (resolvedCounty ?? "")
     .toLowerCase()
     .replace(" county", "")
     .trim();
@@ -1356,21 +1361,22 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h3 className="text-[11px] font-semibold text-zinc-700">
                 A. Identification & Status
               </h3>
-              <p className="text-[11px] text-zinc-600">Listing ID (system): {listing.id}</p>
-              <p className="text-[11px] text-zinc-600">Listing status: {listing.status}</p>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Listing ID (system): {listing.id}</span>
+                <CopyButton text={listing.id} />
+              </p>
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Listing status: {listing.status}</span>
+                <CopyButton text={listing.status} />
+              </p>
               <EditableField label="Listing agreement type" value={answers.listing_agreement_type} answerId="listing_agreement_type" onSave={handleSaveField} />
-              <p className="text-[11px] text-zinc-600">
-                Listing date: {new Date(listing.createdAt).toLocaleDateString()}
+              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+                <span>Listing date: {new Date(listing.createdAt).toLocaleDateString()}</span>
+                <CopyButton text={new Date(listing.createdAt).toLocaleDateString()} />
               </p>
-              <p className="text-[11px] text-zinc-600">
-                Expiration date: <span className="text-zinc-500">— (agent to enter)</span>
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Service type: <span className="text-zinc-500">— (agent to select)</span>
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Auction: <span className="text-zinc-500">— (agent to select)</span>
-              </p>
+              <EditableField label="Expiration date" value={answers.expiration_date} answerId="expiration_date" onSave={handleSaveField} />
+              <EditableField label="Service type" value={answers.service_type} answerId="service_type" onSave={handleSaveField} />
+              <EditableField label="Auction" value={answers.auction} answerId="auction" onSave={handleSaveField} />
             </div>
 
             {/* B. Address & Legal */}
@@ -1398,46 +1404,22 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               </p>
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
                 <span>
-                  County: {attomExt.county ? (
+                  County: {resolvedCounty ? (
                     <>
-                      {attomExt.county}{" "}
-                      <span className="text-zinc-500">(public record – verify)</span>
+                      {resolvedCounty}{" "}
+                      <span className="text-zinc-500">
+                        ({attomExt.county ? "public record" : "from ZIP code"} – verify)
+                      </span>
                     </>
                   ) : (
-                    <span className="text-zinc-500">— (public record – verify)</span>
+                    <span className="text-zinc-500">— (could not determine)</span>
                   )}
                 </span>
-                {attomExt.county && <CopyButton text={attomExt.county} />}
+                {resolvedCounty && <CopyButton text={resolvedCounty} />}
               </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Subdivision name: {attomExt.subdivision ? (
-                    <>
-                      {attomExt.subdivision}{" "}
-                      <span className="text-zinc-500">(public record – verify)</span>
-                    </>
-                  ) : (
-                    <span className="text-zinc-500">— (public record – verify)</span>
-                  )}
-                </span>
-                {attomExt.subdivision && <CopyButton text={attomExt.subdivision} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Legal description: {attomExt.legalDescription ?? "— (agent to paste from tax record)"}
-                </span>
-                {attomExt.legalDescription && (
-                  <CopyButton text={attomExt.legalDescription} />
-                )}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Parcel / Folio ID: {listing.property.parcelId.value ?? "—"} (Public record)
-                </span>
-                {listing.property.parcelId.value && (
-                  <CopyButton text={String(listing.property.parcelId.value)} />
-                )}
-              </p>
+              <EditableField label="Subdivision name" value={answers.subdivision_name} answerId="subdivision_name" fallback={attomExt.subdivision ? `${attomExt.subdivision} (public record)` : null} onSave={handleSaveField} />
+              <EditableField label="Legal description" value={answers.legal_description} answerId="legal_description" fallback={attomExt.legalDescription} onSave={handleSaveField} />
+              <EditableField label="Parcel / Folio ID" value={answers.parcel_id} answerId="parcel_id" fallback={listing.property.parcelId.value ? String(listing.property.parcelId.value) : null} onSave={handleSaveField} />
               <EditableField label="Directions" value={answers.directions} answerId="directions" onSave={handleSaveField} />
             </div>
 
@@ -1452,21 +1434,10 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               </p>
               <EditableField label="Property subtype" value={answers.property_subtype} answerId="property_subtype" onSave={handleSaveField} />
               <EditableField label="Ownership" value={answers.ownership_type} answerId="ownership_type" onSave={handleSaveField} />
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Zoning: {attomExt.zoning ?? "— (agent to enter)"}</span>
-                {attomExt.zoning && <CopyButton text={attomExt.zoning} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Total sq ft: {attomExt.totalSquareFeet ?? "— (agent to confirm)"}</span>
-                {attomExt.totalSquareFeet && <CopyButton text={String(attomExt.totalSquareFeet)} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Stories / levels: {attomExt.stories ?? "— (agent to enter)"}</span>
-                {attomExt.stories && <CopyButton text={attomExt.stories} />}
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Builder name: <span className="text-zinc-500">— (if applicable)</span>
-              </p>
+              <EditableField label="Zoning" value={answers.zoning} answerId="zoning" fallback={attomExt.zoning} onSave={handleSaveField} />
+              <EditableField label="Total sq ft" value={answers.total_sq_ft} answerId="total_sq_ft" fallback={attomExt.totalSquareFeet ? String(attomExt.totalSquareFeet) : null} onSave={handleSaveField} />
+              <EditableField label="Stories / levels" value={answers.stories} answerId="stories" fallback={attomExt.stories} onSave={handleSaveField} />
+              <EditableField label="Builder name" value={answers.builder_name} answerId="builder_name" onSave={handleSaveField} />
             </div>
 
             {/* D. Physical Characteristics */}
@@ -1474,33 +1445,14 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h3 className="text-[11px] font-semibold text-zinc-700">
                 D. Physical Characteristics
               </h3>
-              <p className="text-[11px] text-zinc-600">
-                Bedrooms: {listing.property.beds.value ?? "—"} (Agent confirmed)
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Bathrooms (total): {listing.property.baths.value ?? "—"} (Public record)
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Bathrooms (full / half): <span className="text-zinc-500">— (agent to break out)</span>
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Living area (heated): {listing.property.squareFeet.value ?? "—"} sq ft (Public record)
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Year built: {listing.property.yearBuilt.value ?? "—"} (Public record)
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Total sq ft: <span className="text-zinc-500">— (agent to confirm)</span>
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Lot size: {listing.property.lotSizeSqFt.value ?? "—"} sq ft (Public record)
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Stories / levels: {attomExt.stories ?? <span className="text-zinc-500">— (agent to enter)</span>}
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                Ceiling height: <span className="text-zinc-500">— (if applicable)</span>
-              </p>
+              <EditableField label="Bedrooms" value={answers.bedrooms} answerId="bedrooms" fallback={listing.property.beds.value != null ? String(listing.property.beds.value) : null} onSave={handleSaveField} />
+              <EditableField label="Bathrooms (total)" value={answers.bathrooms_total} answerId="bathrooms_total" fallback={listing.property.baths.value != null ? String(listing.property.baths.value) : null} onSave={handleSaveField} />
+              <EditableField label="Bathrooms (full / half)" value={answers.bathrooms_full_half} answerId="bathrooms_full_half" onSave={handleSaveField} />
+              <EditableField label="Living area (heated sq ft)" value={answers.living_area_sqft} answerId="living_area_sqft" fallback={listing.property.squareFeet.value != null ? String(listing.property.squareFeet.value) : null} onSave={handleSaveField} />
+              <EditableField label="Year built" value={answers.year_built} answerId="year_built" fallback={listing.property.yearBuilt.value != null ? String(listing.property.yearBuilt.value) : null} onSave={handleSaveField} />
+              <EditableField label="Lot size (sq ft)" value={answers.lot_size_sqft} answerId="lot_size_sqft" fallback={listing.property.lotSizeSqFt.value != null ? String(listing.property.lotSizeSqFt.value) : null} onSave={handleSaveField} />
+              <EditableField label="Stories / levels" value={answers.stories_d} answerId="stories_d" fallback={attomExt.stories} onSave={handleSaveField} />
+              <EditableField label="Ceiling height" value={answers.ceiling_height} answerId="ceiling_height" onSave={handleSaveField} />
             </div>
 
             {/* E. Interior Features */}
@@ -1550,41 +1502,8 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   <CopyButton text={answers.hoa_fees_amenities} />
                 )}
               </p>
-              <p className="text-[11px] text-zinc-600">
-                <span>
-                  HOA exists / name: {attomExt.hoaName ? (
-                    <>
-                      {attomExt.hoaName}{" "}
-                      <span className="text-zinc-500">(public record – verify)</span>
-                    </>
-                  ) : (
-                    <span className="text-zinc-500">— (agent to enter)</span>
-                  )}
-                </span>
-                {attomExt.hoaName && <CopyButton text={attomExt.hoaName} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  HOA fee amount / frequency: {attomExt.hoaFeeAmount != null ? (
-                    <>
-                      ${attomExt.hoaFeeAmount.toLocaleString()}
-                      {attomExt.hoaFeeFrequency ? ` (${attomExt.hoaFeeFrequency})` : ""}
-                      <span className="text-zinc-500"> (public record – verify)</span>
-                    </>
-                  ) : (
-                    <span className="text-zinc-500">— (agent to enter)</span>
-                  )}
-                </span>
-                {attomExt.hoaFeeAmount != null && (
-                  <CopyButton
-                    text={
-                      attomExt.hoaFeeFrequency
-                        ? `$${attomExt.hoaFeeAmount.toLocaleString()} ${attomExt.hoaFeeFrequency}`
-                        : `$${attomExt.hoaFeeAmount.toLocaleString()}`
-                    }
-                  />
-                )}
-              </p>
+              <EditableField label="HOA exists / name" value={answers.hoa_name} answerId="hoa_name" fallback={attomExt.hoaName} onSave={handleSaveField} />
+              <EditableField label="HOA fee amount / frequency" value={answers.hoa_fee_amount} answerId="hoa_fee_amount" fallback={attomExt.hoaFeeAmount != null ? `$${attomExt.hoaFeeAmount.toLocaleString()}${attomExt.hoaFeeFrequency ? ` (${attomExt.hoaFeeFrequency})` : ""}` : null} onSave={handleSaveField} />
               <EditableField label="HOA restrictions" value={answers.hoa_restrictions} answerId="hoa_restrictions" onSave={handleSaveField} />
               <EditableField label="Community amenities" value={answers.community_amenities} answerId="community_amenities" onSave={handleSaveField} />
             </div>
@@ -1595,65 +1514,18 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 I. Financial & Tax Info
               </h3>
               <EditableField label="List price" value={answers.list_price} answerId="list_price" onSave={handleSaveField} />
-              <p className="text-[11px] text-zinc-600">
-                Price per sq ft: {answers.list_price && listing.property.squareFeet.value
-                  ? `$${(Number(answers.list_price) / Number(listing.property.squareFeet.value)).toFixed(2)}`
-                  : <span className="text-zinc-500">— (needs list price & sq ft)</span>}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Annual taxes: {listing.property.annualTaxes.value ?? "—"} (Public record)
-                </span>
-                {listing.property.annualTaxes.value != null && (
-                  <CopyButton text={String(listing.property.annualTaxes.value)} />
-                )}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Tax year: {attomExt.taxYear ?? "— (agent to confirm)"}
-                </span>
-                {attomExt.taxYear && <CopyButton text={String(attomExt.taxYear)} />}
-              </p>
-              <p className="text-[11px] text-zinc-600">
-                CDD fees / special assessments: <span className="text-zinc-500">— (agent to enter; check tax bill)</span>
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Homestead exemption: {attomExt.homesteadExemption ?? "— (Yes/No)"}
-                </span>
-                {attomExt.homesteadExemption && (
-                  <CopyButton text={attomExt.homesteadExemption} />
-                )}
-              </p>
+              <EditableField label="Annual taxes" value={answers.annual_taxes} answerId="annual_taxes" fallback={listing.property.annualTaxes.value != null ? String(listing.property.annualTaxes.value) : null} onSave={handleSaveField} />
+              <EditableField label="Tax year" value={answers.tax_year} answerId="tax_year" fallback={attomExt.taxYear ? String(attomExt.taxYear) : null} onSave={handleSaveField} />
+              <EditableField label="CDD fees / special assessments" value={answers.cdd_fees} answerId="cdd_fees" onSave={handleSaveField} />
+              <EditableField label="Homestead exemption" value={answers.homestead_exemption} answerId="homestead_exemption" fallback={attomExt.homesteadExemption} onSave={handleSaveField} />
             </div>
 
             {/* J. Location & Area */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">J. Location & Area</h3>
               <EditableField label="Flood zone" value={answers.flood_zone} answerId="flood_zone" onSave={handleSaveField} />
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Schools (elem/middle/high): {answers.schools_summary || (
-                    <span className="text-zinc-500">— (agent to enter)</span>
-                  )}
-                </span>
-                {answers.schools_summary && (
-                  <CopyButton text={answers.schools_summary} />
-                )}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>
-                  Township / community name: {attomExt.subdivision ? (
-                    <>
-                      {attomExt.subdivision}{" "}
-                      <span className="text-zinc-500">(public record – verify)</span>
-                    </>
-                  ) : (
-                    <span className="text-zinc-500">— (agent to enter)</span>
-                  )}
-                </span>
-                {attomExt.subdivision && <CopyButton text={attomExt.subdivision} />}
-              </p>
+              <EditableField label="Schools (elem/middle/high)" value={answers.schools_summary} answerId="schools_summary" onSave={handleSaveField} />
+              <EditableField label="Township / community name" value={answers.township_community} answerId="township_community" fallback={attomExt.subdivision} onSave={handleSaveField} />
             </div>
 
             {/* K. Listing Description & Marketing */}

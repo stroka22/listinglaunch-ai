@@ -61,21 +61,18 @@ export function AuthScreen() {
         <div className="space-y-4">
           <h1 className="text-2xl font-semibold tracking-tight">ListingLaunch AI</h1>
           <p className="text-sm text-zinc-600">
-            Enter a property once and generate everything you need to launch a
-            listing in Stellar MLS: MLS-ready fields, marketing copy, PDFs, and
-            SMS text-to-lead.
+            Enter a property address and get MLS-ready data, structured fields,
+            and marketing copy you can paste straight into Stellar MLS.
           </p>
           <ul className="text-sm text-zinc-600 list-disc list-inside space-y-1">
-            <li>Pull public record data from Estated for fast intake</li>
-            <li>Collect property details via a smart questions wizard</li>
+            <li>Auto-fill property data from public records</li>
+            <li>Answer guided smart questions to complete every MLS field</li>
             <li>Generate Stellar MLS-ready remarks and feature bullets</li>
-            <li>Create open house flyers and a mobile-friendly property hub</li>
-            <li>Assign SMS keywords and capture leads with Twilio</li>
+            <li>Copy structured fields directly into your MLS entry</li>
           </ul>
           <p className="text-[11px] text-zinc-500">
-            This tool does not log in to Stellar MLS or Matrix and does not
-            create or edit live MLS listings. It prepares MLS-ready data for
-            manual entry only.
+            ListingLaunchAI does not log in to Stellar MLS or Matrix. It
+            prepares MLS-ready drafts for you to review and enter.
           </p>
         </div>
 
@@ -189,9 +186,7 @@ export function AuthScreen() {
             </button>
 
             <p className="text-[11px] text-zinc-500">
-              Authentication is powered by Supabase. Configure your
-              NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-              environment variables before using this app.
+              Your data is stored securely and never shared with third parties.
             </p>
           </form>
         </div>

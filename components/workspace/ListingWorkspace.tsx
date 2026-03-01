@@ -14,6 +14,77 @@ interface ListingWorkspaceProps {
   listingId: string;
 }
 
+function EditableField({
+  label,
+  value,
+  answerId,
+  fallback,
+  onSave,
+}: {
+  label: string;
+  value: string | null | undefined;
+  answerId: string;
+  fallback?: string | null;
+  onSave: (id: string, val: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? fallback ?? "");
+  const display = value || fallback || null;
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1 text-[11px] text-zinc-600">
+        <span className="shrink-0">{label}:</span>
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onSave(answerId, draft);
+              setEditing(false);
+            }
+            if (e.key === "Escape") setEditing(false);
+          }}
+          className="flex-1 rounded border border-zinc-300 px-1.5 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-black/40"
+        />
+        <button
+          type="button"
+          onClick={() => { onSave(answerId, draft); setEditing(false); }}
+          className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 hover:bg-emerald-100"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-100"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
+      <span>
+        {label}: {display ?? <span className="text-zinc-500">—</span>}
+      </span>
+      <span className="flex items-center gap-1">
+        {display && <CopyButton text={display} />}
+        <button
+          type="button"
+          onClick={() => { setDraft(display ?? ""); setEditing(true); }}
+          className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-100"
+        >
+          Edit
+        </button>
+      </span>
+    </p>
+  );
+}
+
 function CopyButton({ text }: { text: string }) {
   const [status, setStatus] = useState<"idle" | "copied">("idle");
 
@@ -209,6 +280,118 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
     } catch (err: any) {
       setRegenError(err?.message ?? "Could not regenerate AI assets");
       setRegenStatus("error");
+    }
+  }
+
+  const [fieldSaveStatus, setFieldSaveStatus] = useState<string | null>(null);
+
+  async function handleSaveField(answerId: string, value: string) {
+    if (!listing) return;
+    setFieldSaveStatus(null);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const currentAnswers = (listing.wizardAnswers ?? {}) as Record<string, string>;
+      const updatedAnswers = { ...currentAnswers, [answerId]: value };
+
+      const { error } = await supabase
+        .from("listings")
+        .update({ wizard_answers: updatedAnswers })
+        .eq("id", listing.id);
+
+      if (error) throw error;
+
+      setListing((prev) =>
+        prev ? ({ ...prev, wizardAnswers: updatedAnswers } as Listing) : prev,
+      );
+      setFieldSaveStatus("Saved");
+      setTimeout(() => setFieldSaveStatus(null), 2000);
+    } catch (err: any) {
+      setFieldSaveStatus(`Error: ${err?.message ?? "Save failed"}`);
+    }
+  }
+
+  const [relookupLoading, setRelookupLoading] = useState(false);
+  const [relookupError, setRelookupError] = useState<string | null>(null);
+  const [relookupDone, setRelookupDone] = useState(false);
+
+  async function handleRelookup() {
+    if (!listing) return;
+    setRelookupLoading(true);
+    setRelookupError(null);
+    setRelookupDone(false);
+    try {
+      const res = await fetch("/api/estated", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          street: listing.street,
+          city: listing.city,
+          state: listing.state,
+          postalCode: listing.postalCode,
+        }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.error || "Property lookup failed");
+      }
+
+      const json = (await res.json()) as {
+        snapshot: any;
+        raw: unknown;
+        schoolsRaw: unknown | null;
+        warnings: string[];
+      };
+
+      // Import the deriver dynamically to avoid circular issues
+      const { deriveSmartWizardDefaultsFromRaw, deriveSchoolsFromRawSchools } =
+        await import("@/lib/estated");
+
+      const defaults = deriveSmartWizardDefaultsFromRaw(json.raw);
+
+      const schoolSummary = deriveSchoolsFromRawSchools(json.schoolsRaw ?? null);
+      if (schoolSummary.elementary || schoolSummary.middle || schoolSummary.high) {
+        const parts: string[] = [];
+        if (schoolSummary.elementary) parts.push(`Elem: ${schoolSummary.elementary}`);
+        if (schoolSummary.middle) parts.push(`Middle: ${schoolSummary.middle}`);
+        if (schoolSummary.high) parts.push(`High: ${schoolSummary.high}`);
+        defaults.schools_summary = `${parts.join(" | ")} (per ATTOM schools; buyer to verify with district).`;
+      }
+
+      // Merge: keep existing answers, backfill new ones from ATTOM
+      const currentAnswers = (listing.wizardAnswers ?? {}) as Record<string, string>;
+      const merged: Record<string, string> = { ...defaults };
+      for (const [k, v] of Object.entries(currentAnswers)) {
+        if (v) merged[k] = v; // agent's existing answers take priority
+      }
+
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("listings")
+        .update({
+          estated_raw: json.raw,
+          property: json.snapshot,
+          wizard_answers: merged,
+        })
+        .eq("id", listing.id);
+
+      if (error) throw error;
+
+      setListing((prev) =>
+        prev
+          ? ({
+              ...prev,
+              estatedRaw: json.raw,
+              property: json.snapshot,
+              wizardAnswers: merged,
+            } as Listing)
+          : prev,
+      );
+      setRelookupDone(true);
+    } catch (err: any) {
+      setRelookupError(err?.message ?? "Re-lookup failed");
+    } finally {
+      setRelookupLoading(false);
     }
   }
 
@@ -569,14 +752,48 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
     seminole: "https://www.scpafl.org",
     lake: "https://www.lakecopropappr.com",
     marion: "https://www.pa.marion.fl.us",
+    lee: "https://www.leepa.org",
+    collier: "https://www.collierappraiser.com",
+    brevard: "https://www.bcpao.us",
+    volusia: "https://www.vcgov.org/pa",
+    duval: "https://www.coj.net/departments/property-appraiser",
+    broward: "https://www.bcpa.net",
+    "miami-dade": "https://www.miamidadepa.gov",
+    palm_beach: "https://www.pbcgov.org/papa",
+    "palm beach": "https://www.pbcgov.org/papa",
+    osceola: "https://www.property-appraiser.org",
+    charlotte: "https://www.ccappraiser.com",
+    alachua: "https://www.acpafl.org",
+    bay: "https://www.prior.baypa.net",
+    leon: "https://www.leonpa.org",
+    escambia: "https://www.escpa.org",
+    st_lucie: "https://www.paslc.gov",
+    "st. lucie": "https://www.paslc.gov",
+    indian_river: "https://www.ircpa.org",
+    "indian river": "https://www.ircpa.org",
+    martin: "https://www.pa.martin.fl.us",
+    flagler: "https://www.flaglerpa.com",
+    "st. johns": "https://www.sjcpa.us",
+    st_johns: "https://www.sjcpa.us",
+    clay: "https://www.ccpao.com",
+    nassau: "https://www.nassauflpa.com",
+    sumter: "https://www.sumterpa.com",
   };
+
+  const parcelId = listing.property.parcelId.value
+    ? String(listing.property.parcelId.value)
+    : "";
 
   const propertyAppraiserUrl =
     listing.state.toUpperCase() === "FL" && countyKey && flAppraisers[countyKey]
       ? flAppraisers[countyKey]
       : `https://www.google.com/search?q=${encodeURIComponent(
-          addressLine + " property appraiser",
+          (parcelId ? `parcel ${parcelId} ` : "") + addressLine + " property appraiser tax roll",
         )}`;
+
+  const schoolZoneUrl = `https://www.greatschools.org/school-district-boundaries-map/?address=${encodeURIComponent(addressLine)}`;
+
+  const femaUrl = `https://msc.fema.gov/portal/search?AddressQuery=${encodeURIComponent(addressLine)}`;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-4">
@@ -1060,12 +1277,10 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               rel="noreferrer noopener"
               className="underline"
             >
-              Property appraiser / tax roll search
+              Property appraiser / tax roll
             </a>
             <a
-              href={`https://msc.fema.gov/portal/search?Address=${encodeURIComponent(
-                addressLine,
-              )}`}
+              href={femaUrl}
               target="_blank"
               rel="noreferrer noopener"
               className="underline"
@@ -1073,19 +1288,41 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               FEMA flood map
             </a>
             <a
-              href={`https://www.google.com/search?q=${encodeURIComponent(
-                addressLine + " school zone",
-              )}`}
+              href={schoolZoneUrl}
               target="_blank"
               rel="noreferrer noopener"
               className="underline"
             >
-              School zone search
+              School zone map (GreatSchools)
             </a>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRelookup}
+              disabled={relookupLoading}
+              className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+            >
+              {relookupLoading ? "Re-running lookup…" : "Re-run property lookup"}
+            </button>
+            {relookupDone && (
+              <span className="text-[11px] text-emerald-600">
+                Property data refreshed and new fields backfilled.
+              </span>
+            )}
+            {relookupError && (
+              <span className="text-[11px] text-red-600">{relookupError}</span>
+            )}
+            {fieldSaveStatus && (
+              <span className={`text-[11px] ${fieldSaveStatus.startsWith("Error") ? "text-red-600" : "text-emerald-600"}`}>
+                {fieldSaveStatus}
+              </span>
+            )}
+          </div>
+
           <p className="text-[11px] text-zinc-500">
-            Still review everything against your broker and Stellar MLS rules before you publish.
+            Click Edit on any field to fill in missing data. Re-run property lookup to refresh ATTOM data.
           </p>
 
           <div className="mt-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2">
@@ -1121,10 +1358,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               </h3>
               <p className="text-[11px] text-zinc-600">Listing ID (system): {listing.id}</p>
               <p className="text-[11px] text-zinc-600">Listing status: {listing.status}</p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Listing agreement type: {answers.listing_agreement_type || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.listing_agreement_type && <CopyButton text={answers.listing_agreement_type} />}
-              </p>
+              <EditableField label="Listing agreement type" value={answers.listing_agreement_type} answerId="listing_agreement_type" onSave={handleSaveField} />
               <p className="text-[11px] text-zinc-600">
                 Listing date: {new Date(listing.createdAt).toLocaleDateString()}
               </p>
@@ -1204,10 +1438,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   <CopyButton text={String(listing.property.parcelId.value)} />
                 )}
               </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Directions: {answers.directions || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.directions && <CopyButton text={answers.directions} />}
-              </p>
+              <EditableField label="Directions" value={answers.directions} answerId="directions" onSave={handleSaveField} />
             </div>
 
             {/* C. Property Classification */}
@@ -1219,14 +1450,8 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                 <span>Property type: {listing.property.propertyType.value ?? "—"} (Public record)</span>
                 {listing.property.propertyType.value && <CopyButton text={String(listing.property.propertyType.value)} />}
               </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Property subtype: {answers.property_subtype || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.property_subtype && <CopyButton text={answers.property_subtype} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Ownership: {answers.ownership_type || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.ownership_type && <CopyButton text={answers.ownership_type} />}
-              </p>
+              <EditableField label="Property subtype" value={answers.property_subtype} answerId="property_subtype" onSave={handleSaveField} />
+              <EditableField label="Ownership" value={answers.ownership_type} answerId="ownership_type" onSave={handleSaveField} />
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
                 <span>Zoning: {attomExt.zoning ?? "— (agent to enter)"}</span>
                 {attomExt.zoning && <CopyButton text={attomExt.zoning} />}
@@ -1281,92 +1506,35 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             {/* E. Interior Features */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">E. Interior Features</h3>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Flooring: {answers.flooring || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.flooring && <CopyButton text={answers.flooring} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Interior features: {answers.interior_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.interior_features && <CopyButton text={answers.interior_features} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Appliances: {answers.appliances || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.appliances && <CopyButton text={answers.appliances} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Laundry: {answers.laundry_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.laundry_features && <CopyButton text={answers.laundry_features} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Windows: {answers.window_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.window_features && <CopyButton text={answers.window_features} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Fireplace: {answers.fireplace ?? (attomExt.fireplaceType && !/yes/i.test(attomExt.fireplaceType) ? attomExt.fireplaceType : null) ?? <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.fireplace || attomExt.fireplaceType) && <CopyButton text={answers.fireplace || attomExt.fireplaceType || ""} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Accessibility: {answers.accessibility_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.accessibility_features && <CopyButton text={answers.accessibility_features} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Key upgrades: {answers.key_upgrades || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.key_upgrades && <CopyButton text={answers.key_upgrades} />}
-              </p>
+              <EditableField label="Flooring" value={answers.flooring} answerId="flooring" onSave={handleSaveField} />
+              <EditableField label="Interior features" value={answers.interior_features} answerId="interior_features" onSave={handleSaveField} />
+              <EditableField label="Appliances" value={answers.appliances} answerId="appliances" onSave={handleSaveField} />
+              <EditableField label="Laundry" value={answers.laundry_features} answerId="laundry_features" onSave={handleSaveField} />
+              <EditableField label="Windows" value={answers.window_features} answerId="window_features" onSave={handleSaveField} />
+              <EditableField label="Fireplace" value={answers.fireplace} answerId="fireplace" fallback={attomExt.fireplaceType && !/yes/i.test(attomExt.fireplaceType) ? attomExt.fireplaceType : null} onSave={handleSaveField} />
+              <EditableField label="Accessibility" value={answers.accessibility_features} answerId="accessibility_features" onSave={handleSaveField} />
+              <EditableField label="Key upgrades" value={answers.key_upgrades} answerId="key_upgrades" onSave={handleSaveField} />
             </div>
 
             {/* F. Exterior Features */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">F. Exterior Features</h3>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Roof: {answers.roof_type_age || (attomExt.roofType ? `${attomExt.roofType} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.roof_type_age || attomExt.roofType) && <CopyButton text={answers.roof_type_age || attomExt.roofType || ""} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Construction: {answers.construction_materials || (attomExt.constructionWallType ? `${attomExt.constructionWallType} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.construction_materials || attomExt.constructionWallType) && <CopyButton text={answers.construction_materials || attomExt.constructionWallType || ""} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Foundation: {answers.foundation_type || (attomExt.foundationType ?? null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.foundation_type || attomExt.foundationType) && <CopyButton text={answers.foundation_type || attomExt.foundationType || ""} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Exterior features: {answers.exterior_features || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.exterior_features && <CopyButton text={answers.exterior_features} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Pool / waterfront: {answers.pool_waterfront_garage || (attomExt.poolType ? `${attomExt.poolType} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.pool_waterfront_garage || attomExt.poolType) && <CopyButton text={answers.pool_waterfront_garage || attomExt.poolType || ""} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Lot features: {answers.lot_features || (attomExt.lotFeatures ?? null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.lot_features || attomExt.lotFeatures) && <CopyButton text={answers.lot_features || attomExt.lotFeatures || ""} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Parking / garage: {answers.parking_garage || (attomExt.parkingType ? `${attomExt.parkingType}${attomExt.parkingSpaces != null ? ` (${attomExt.parkingSpaces} spaces)` : ""} (public record)` : null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.parking_garage || attomExt.parkingType) && <CopyButton text={answers.parking_garage || attomExt.parkingType || ""} />}
-              </p>
+              <EditableField label="Roof" value={answers.roof_type_age} answerId="roof_type_age" fallback={attomExt.roofType ? `${attomExt.roofType} (public record)` : null} onSave={handleSaveField} />
+              <EditableField label="Construction" value={answers.construction_materials} answerId="construction_materials" fallback={attomExt.constructionWallType ? `${attomExt.constructionWallType} (public record)` : null} onSave={handleSaveField} />
+              <EditableField label="Foundation" value={answers.foundation_type} answerId="foundation_type" fallback={attomExt.foundationType} onSave={handleSaveField} />
+              <EditableField label="Exterior features" value={answers.exterior_features} answerId="exterior_features" onSave={handleSaveField} />
+              <EditableField label="Pool / waterfront" value={answers.pool_waterfront_garage} answerId="pool_waterfront_garage" fallback={attomExt.poolType ? `${attomExt.poolType} (public record)` : null} onSave={handleSaveField} />
+              <EditableField label="Lot features" value={answers.lot_features} answerId="lot_features" fallback={attomExt.lotFeatures} onSave={handleSaveField} />
+              <EditableField label="Parking / garage" value={answers.parking_garage} answerId="parking_garage" fallback={attomExt.parkingType ? `${attomExt.parkingType}${attomExt.parkingSpaces != null ? ` (${attomExt.parkingSpaces} spaces)` : ""}` : null} onSave={handleSaveField} />
             </div>
 
             {/* G. Utilities & Systems */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">G. Utilities & Systems</h3>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Heating / cooling: {answers.hvac_type_age || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.hvac_type_age && <CopyButton text={answers.hvac_type_age} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Water heater: {answers.water_heater || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.water_heater && <CopyButton text={answers.water_heater} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Water / sewer: {answers.water_sewer || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.water_sewer && <CopyButton text={answers.water_sewer} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Electric / gas provider: {answers.electric_provider || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.electric_provider && <CopyButton text={answers.electric_provider} />}
-              </p>
+              <EditableField label="Heating / cooling" value={answers.hvac_type_age} answerId="hvac_type_age" onSave={handleSaveField} />
+              <EditableField label="Water heater" value={answers.water_heater} answerId="water_heater" onSave={handleSaveField} />
+              <EditableField label="Water / sewer" value={answers.water_sewer} answerId="water_sewer" onSave={handleSaveField} />
+              <EditableField label="Electric / gas" value={answers.electric_provider} answerId="electric_provider" onSave={handleSaveField} />
             </div>
 
             {/* H. HOA / Community Information */}
@@ -1417,14 +1585,8 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
                   />
                 )}
               </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>HOA restrictions: {answers.hoa_restrictions || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.hoa_restrictions && <CopyButton text={answers.hoa_restrictions} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Community amenities: {answers.community_amenities || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.community_amenities && <CopyButton text={answers.community_amenities} />}
-              </p>
+              <EditableField label="HOA restrictions" value={answers.hoa_restrictions} answerId="hoa_restrictions" onSave={handleSaveField} />
+              <EditableField label="Community amenities" value={answers.community_amenities} answerId="community_amenities" onSave={handleSaveField} />
             </div>
 
             {/* I. Financial & Tax Info */}
@@ -1432,10 +1594,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <h3 className="text-[11px] font-semibold text-zinc-700">
                 I. Financial & Tax Info
               </h3>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>List price: {answers.list_price ? `$${Number(answers.list_price).toLocaleString()}` : <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.list_price && <CopyButton text={answers.list_price} />}
-              </p>
+              <EditableField label="List price" value={answers.list_price} answerId="list_price" onSave={handleSaveField} />
               <p className="text-[11px] text-zinc-600">
                 Price per sq ft: {answers.list_price && listing.property.squareFeet.value
                   ? `$${(Number(answers.list_price) / Number(listing.property.squareFeet.value)).toFixed(2)}`
@@ -1471,10 +1630,7 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
             {/* J. Location & Area */}
             <div className="space-y-1">
               <h3 className="text-[11px] font-semibold text-zinc-700">J. Location & Area</h3>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Flood zone: {answers.flood_zone || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.flood_zone && <CopyButton text={answers.flood_zone} />}
-              </p>
+              <EditableField label="Flood zone" value={answers.flood_zone} answerId="flood_zone" onSave={handleSaveField} />
               <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
                 <span>
                   Schools (elem/middle/high): {answers.schools_summary || (
@@ -1514,18 +1670,9 @@ export function ListingWorkspace({ listingId }: ListingWorkspaceProps) {
               <p className="text-[11px] text-zinc-600">
                 Additional features / bullets: <span className="text-zinc-500">— (see MLS Copy tab)</span>
               </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Showing instructions: {answers.showing_instructions || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.showing_instructions && <CopyButton text={answers.showing_instructions} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Lockbox: {answers.lockbox_type || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {answers.lockbox_type && <CopyButton text={answers.lockbox_type} />}
-              </p>
-              <p className="flex items-center justify-between gap-2 text-[11px] text-zinc-600">
-                <span>Occupancy: {answers.occupancy_status || (attomExt.absenteeOwner ?? null) || <span className="text-zinc-500">— (set in wizard)</span>}</span>
-                {(answers.occupancy_status || attomExt.absenteeOwner) && <CopyButton text={answers.occupancy_status || attomExt.absenteeOwner || ""} />}
-              </p>
+              <EditableField label="Showing instructions" value={answers.showing_instructions} answerId="showing_instructions" onSave={handleSaveField} />
+              <EditableField label="Lockbox" value={answers.lockbox_type} answerId="lockbox_type" onSave={handleSaveField} />
+              <EditableField label="Occupancy" value={answers.occupancy_status} answerId="occupancy_status" fallback={attomExt.absenteeOwner} onSave={handleSaveField} />
             </div>
 
             {/* L. Agent & Brokerage Info */}

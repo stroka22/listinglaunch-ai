@@ -184,13 +184,13 @@ export function Dashboard({ session }: DashboardProps) {
 
   async function handleArchiveListing(listingId: string) {
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("listings")
-        .update({ archived: true })
-        .eq("id", listingId)
-        .eq("agent_id", session.user.id);
-      if (error) { setError(error.message); return; }
+      const res = await fetch(`/api/listings/${listingId}/manage`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: session.user.id, archived: true }),
+      });
+      const json = (await res.json().catch(() => null)) as any;
+      if (!res.ok) { setError(json?.error || "Failed to archive listing"); return; }
       setListings((prev) => prev.filter((l) => l.id !== listingId));
     } catch (err: any) {
       setError(err?.message ?? "Failed to archive listing");
@@ -200,13 +200,13 @@ export function Dashboard({ session }: DashboardProps) {
   async function handleDeleteListing(listingId: string) {
     if (!window.confirm("Delete this listing permanently? This cannot be undone.")) return;
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("listings")
-        .delete()
-        .eq("id", listingId)
-        .eq("agent_id", session.user.id);
-      if (error) { setError(error.message); return; }
+      const res = await fetch(`/api/listings/${listingId}/manage`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: session.user.id }),
+      });
+      const json = (await res.json().catch(() => null)) as any;
+      if (!res.ok) { setError(json?.error || "Failed to delete listing"); return; }
       setListings((prev) => prev.filter((l) => l.id !== listingId));
     } catch (err: any) {
       setError(err?.message ?? "Failed to delete listing");

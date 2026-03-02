@@ -382,14 +382,23 @@ export function GuidedWorkspace({ listingId }: Props) {
     attomExt.county ||
     (listing.state.toUpperCase() === "FL" ? countyFromZip(listing.postalCode) : null);
 
+  const answeredCount = Object.values(answers).filter(Boolean).length;
+
   // Step completion
   const stepComplete: Record<Step, boolean> = {
-    property: (prop?.beds?.value != null || prop?.squareFeet?.value != null),
-    questions: Object.values(answers).filter(Boolean).length >= 5,
+    property: prop?.beds?.value != null || prop?.squareFeet?.value != null || answeredCount > 0,
+    questions: answeredCount >= 5,
     copy: Boolean(ai?.mlsPublicRemarks?.standard),
-    fields: Boolean(answers.list_price || answers.directions),
-    disclosures: Boolean((listing as any).disclosures),
+    fields: answeredCount >= 8,
+    disclosures: Boolean(
+      listing.disclosures &&
+      typeof listing.disclosures === "object" &&
+      (listing.disclosures as any).answers &&
+      Object.values((listing.disclosures as any).answers).some(Boolean),
+    ),
   };
+
+  const allComplete = Object.values(stepComplete).every(Boolean);
 
   const disclosureQuestions = disclosures ? packagesForQuestion(disclosures.metadata) : [];
 
@@ -456,10 +465,21 @@ export function GuidedWorkspace({ listingId }: Props) {
             <h1 className="text-base font-semibold text-zinc-900">{listing.street}</h1>
             <p className="text-xs text-zinc-500">{listing.city}, {listing.state} {listing.postalCode}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {fieldSaveStatus && (
               <span className={`text-xs ${fieldSaveStatus.startsWith("Error") ? "text-red-600" : "text-emerald-600"}`}>
                 {fieldSaveStatus}
+              </span>
+            )}
+            {allComplete ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Ready for MLS
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                In progress
               </span>
             )}
           </div>
@@ -531,6 +551,25 @@ export function GuidedWorkspace({ listingId }: Props) {
 
         {/* Main content */}
         <div className="min-w-0 flex-1">
+          {/* Completion banner */}
+          {allComplete && (
+            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
+                  ✓
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">
+                    All steps complete — this listing is ready for Stellar MLS
+                  </p>
+                  <p className="text-xs text-emerald-700">
+                    Use the MLS Copy and MLS Fields tabs to copy your data into Stellar. Review everything before publishing.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ═══ Step 1: Property Data ═══ */}
           {activeStep === "property" && (
             <div className="space-y-5">
@@ -906,11 +945,54 @@ export function GuidedWorkspace({ listingId }: Props) {
           {/* ═══ Step 4: MLS Fields ═══ */}
           {activeStep === "fields" && (
             <div className="space-y-5">
-              <div>
-                <h2 className="text-lg font-semibold text-zinc-900">MLS Fields</h2>
-                <p className="text-sm text-zinc-500">
-                  All the fields you need for Stellar MLS. Click Copy to grab any value, or Edit to change it.
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-zinc-900">MLS Fields</h2>
+                  <p className="text-sm text-zinc-500">
+                    All the fields you need for Stellar MLS. Click Copy to grab any value, or Edit to change it.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const fieldPairs = [
+                      ["Address", addressLine],
+                      ["County", resolvedCounty],
+                      ["Parcel ID", answers.parcel_id || (prop?.parcelId?.value ? String(prop.parcelId.value) : "")],
+                      ["List Price", answers.list_price],
+                      ["Bedrooms", answers.bedrooms || (prop?.beds?.value != null ? String(prop.beds.value) : "")],
+                      ["Bathrooms", answers.bathrooms_total || (prop?.baths?.value != null ? String(prop.baths.value) : "")],
+                      ["Sq Ft", answers.living_area_sqft || (prop?.squareFeet?.value != null ? String(prop.squareFeet.value) : "")],
+                      ["Year Built", answers.year_built || (prop?.yearBuilt?.value != null ? String(prop.yearBuilt.value) : "")],
+                      ["Lot Size", answers.lot_size_sqft || (prop?.lotSizeSqFt?.value != null ? String(prop.lotSizeSqFt.value) : "")],
+                      ["Property Type", answers.property_subtype || (prop?.propertyType?.value ? String(prop.propertyType.value) : "")],
+                      ["Roof", answers.roof_type_age || attomExt.roofType || ""],
+                      ["Construction", answers.construction_materials || attomExt.constructionWallType || ""],
+                      ["Flooring", answers.flooring],
+                      ["HVAC", answers.hvac_type_age],
+                      ["Water/Sewer", answers.water_sewer],
+                      ["Pool/Waterfront", answers.pool_waterfront_garage || attomExt.poolType || ""],
+                      ["Parking", answers.parking_garage || attomExt.parkingType || ""],
+                      ["HOA", answers.hoa_name || attomExt.hoaName || ""],
+                      ["HOA Fee", answers.hoa_fee_amount],
+                      ["Annual Taxes", answers.annual_taxes || (prop?.annualTaxes?.value != null ? String(prop.annualTaxes.value) : "")],
+                      ["Schools", answers.schools_summary],
+                      ["Flood Zone", answers.flood_zone],
+                      ["Showing", answers.showing_instructions],
+                      ["Lockbox", answers.lockbox_type],
+                    ];
+                    const text = fieldPairs
+                      .filter(([, v]) => v)
+                      .map(([k, v]) => `${k}: ${v}`)
+                      .join("\n");
+                    try {
+                      await navigator.clipboard.writeText(text);
+                    } catch { /* fallback: ignore */ }
+                  }}
+                  className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+                >
+                  Copy all fields
+                </button>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

@@ -37,7 +37,7 @@ export function DashboardView({ session }: Props) {
       const { data, error: err } = await supabase
         .from("listings")
         .select(
-          "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, archived, property, ai_content, wizard_answers",
+          "id, agent_id, slug, created_at, updated_at, street, city, state, postal_code, status, archived, property, ai_content, wizard_answers, disclosures",
         )
         .eq("agent_id", session.user.id)
         .eq("archived", false)
@@ -61,6 +61,7 @@ export function DashboardView({ session }: Props) {
           property: row.property,
           aiContent: row.ai_content,
           wizardAnswers: row.wizard_answers,
+          disclosures: row.disclosures ?? null,
           smsKeyword: row.sms_keyword ?? "",
           smsPhoneNumber: row.sms_phone_number ?? "",
           estatedRaw: null,
@@ -218,26 +219,53 @@ export function DashboardView({ session }: Props) {
     }
   }
 
-  function getProgress(listing: Listing): { done: number; total: number } {
+  function getProgress(listing: Listing): {
+    done: number;
+    total: number;
+    steps: { label: string; done: boolean }[];
+    nextAction: string | null;
+  } {
     const answers = (listing.wizardAnswers ?? {}) as Record<string, string>;
     const ai = listing.aiContent;
     const prop = listing.property;
-    let done = 0;
-    const total = 5;
+    const disc = listing.disclosures;
 
-    // Step 1: Property data loaded
-    if (prop?.beds?.value != null || prop?.squareFeet?.value != null) done++;
-    // Step 2: Smart questions (at least 5 answered)
     const answeredCount = Object.values(answers).filter(Boolean).length;
-    if (answeredCount >= 5) done++;
-    // Step 3: AI copy generated
-    if (ai?.mlsPublicRemarks?.standard) done++;
-    // Step 4: MLS fields reviewed (proxy: list price or directions filled)
-    if (answers.list_price || answers.directions) done++;
-    // Step 5: Disclosures (at least started)
-    if ((listing as any).disclosures) done++;
 
-    return { done, total };
+    const steps = [
+      {
+        label: "Property data",
+        done: prop?.beds?.value != null || prop?.squareFeet?.value != null || answeredCount > 0,
+      },
+      {
+        label: "Smart questions",
+        done: answeredCount >= 5,
+      },
+      {
+        label: "MLS copy",
+        done: Boolean(ai?.mlsPublicRemarks?.standard),
+      },
+      {
+        label: "MLS fields",
+        done: answeredCount >= 8,
+      },
+      {
+        label: "Disclosures",
+        done: Boolean(disc && typeof disc === "object" && (disc as any).answers && Object.values((disc as any).answers).some(Boolean)),
+      },
+    ];
+
+    const done = steps.filter((s) => s.done).length;
+    const total = steps.length;
+
+    let nextAction: string | null = null;
+    if (!steps[0].done) nextAction = "Review property data";
+    else if (!steps[1].done) nextAction = "Answer smart questions";
+    else if (!steps[2].done) nextAction = "Generate MLS copy";
+    else if (!steps[3].done) nextAction = "Fill in MLS fields";
+    else if (!steps[4].done) nextAction = "Complete disclosures";
+
+    return { done, total, steps, nextAction };
   }
 
   return (
@@ -397,8 +425,23 @@ export function DashboardView({ session }: Props) {
                   )}
                 </div>
 
-                {/* Progress bar */}
+                {/* Status badge */}
                 <div className="mt-3">
+                  {pct === 100 ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Ready for MLS
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                      In progress
+                    </span>
+                  )}
+                </div>
+
+                {/* Progress bar */}
+                <div className="mt-2">
                   <div className="mb-1 flex items-center justify-between text-xs">
                     <span className="text-zinc-500">
                       {progress.done}/{progress.total} steps
@@ -415,13 +458,24 @@ export function DashboardView({ session }: Props) {
                   </div>
                 </div>
 
+                {/* Next action hint */}
+                {progress.nextAction && (
+                  <p className="mt-2 text-xs text-amber-600">
+                    Next: {progress.nextAction}
+                  </p>
+                )}
+
                 {/* Actions */}
                 <div className="mt-3 flex items-center justify-between">
                   <a
                     href={`/workspace/listings/${listing.id}`}
-                    className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                      pct === 100
+                        ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                    }`}
                   >
-                    Open workspace →
+                    {pct === 100 ? "Review & copy to MLS →" : "Continue →"}
                   </a>
                   <button
                     type="button"

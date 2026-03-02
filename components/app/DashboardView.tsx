@@ -250,8 +250,8 @@ export function DashboardView({ session }: Props) {
         done: answeredCount >= 8,
       },
       {
-        label: "Disclosures",
-        done: Boolean(disc && typeof disc === "object" && (disc as any).answers && Object.values((disc as any).answers).some(Boolean)),
+        label: "Seller interview",
+        done: Boolean(disc && typeof disc === "object" && (disc as any).answers && Object.values((disc as any).answers).filter(Boolean).length >= 3),
       },
     ];
 
@@ -263,7 +263,7 @@ export function DashboardView({ session }: Props) {
     else if (!steps[1].done) nextAction = "Answer smart questions";
     else if (!steps[2].done) nextAction = "Generate MLS copy";
     else if (!steps[3].done) nextAction = "Fill in MLS fields";
-    else if (!steps[4].done) nextAction = "Complete disclosures";
+    else if (!steps[4].done) nextAction = "Complete seller interview";
 
     return { done, total, steps, nextAction };
   }

@@ -75,6 +75,7 @@ export interface ListingDisclosuresMetadata {
 export interface ListingDisclosures {
   metadata: ListingDisclosuresMetadata;
   answers: Record<string, DisclosureAnswer>;
+  notes?: Record<string, string>;
 }
 
 export interface Listing {

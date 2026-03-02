@@ -11,6 +11,10 @@ import {
 import { deriveExtendedFieldsFromRaw } from "@/lib/estated";
 import { countyFromZip } from "@/lib/fl-zip-county";
 import { SMART_QUESTIONS, type QuestionCategory } from "@/lib/questions";
+import {
+  SELLER_INTERVIEW_QUESTIONS,
+  SELLER_INTERVIEW_CATEGORIES,
+} from "@/lib/seller-interview";
 
 interface Props {
   listingId: string;
@@ -23,7 +27,7 @@ const STEPS: { id: Step; label: string; short: string }[] = [
   { id: "questions", label: "Answer Smart Questions", short: "Questions" },
   { id: "copy", label: "Generate MLS Copy", short: "MLS Copy" },
   { id: "fields", label: "Review & Copy Fields", short: "Fields" },
-  { id: "disclosures", label: "FL Disclosures", short: "Disclosures" },
+  { id: "disclosures", label: "Seller Interview", short: "Seller Interview" },
 ];
 
 function CopyButton({ text }: { text: string }) {
@@ -143,6 +147,9 @@ export function GuidedWorkspace({ listingId }: Props) {
   const [answersSaving, setAnswersSaving] = useState(false);
   const [answersSaved, setAnswersSaved] = useState(false);
 
+  // Seller interview notes
+  const [interviewNotes, setInterviewNotes] = useState<Record<string, string>>({});
+
   useEffect(() => {
     loadWorkspace();
   }, [listingId]);
@@ -200,6 +207,7 @@ export function GuidedWorkspace({ listingId }: Props) {
           yearBuilt: loaded.property.yearBuilt.value,
         });
       setDisclosures(initial);
+      setInterviewNotes((initial as any).notes ?? {});
     } catch (err: any) {
       setLoadError(err?.message ?? "Failed to load listing");
     } finally {
@@ -330,22 +338,49 @@ export function GuidedWorkspace({ listingId }: Props) {
     }
   }
 
-  // Save disclosures
+  // Save seller interview (disclosures + notes) and auto-populate MLS fields
   async function handleSaveDisclosures() {
     if (!listing || !disclosures) return;
     setDisclosuresError(null);
     setDisclosuresSaving(true);
     try {
       const supabase = getSupabaseBrowserClient();
+      const updatedDisclosures = { ...disclosures, notes: interviewNotes };
+
+      // Auto-populate wizard_answers from interview notes where applicable
+      const currentAnswers = (listing.wizardAnswers ?? {}) as Record<string, string>;
+      const updatedAnswers = { ...currentAnswers };
+      let answersChanged = false;
+
+      for (const q of SELLER_INTERVIEW_QUESTIONS) {
+        if (q.feedsField && interviewNotes[q.id] && !currentAnswers[q.feedsField]) {
+          updatedAnswers[q.feedsField] = interviewNotes[q.id];
+          answersChanged = true;
+        }
+      }
+
+      const updates: Record<string, any> = { disclosures: updatedDisclosures };
+      if (answersChanged) {
+        updates.wizard_answers = updatedAnswers;
+      }
+
       const { error } = await supabase
         .from("listings")
-        .update({ disclosures })
+        .update(updates)
         .eq("id", listing.id);
       if (error) throw error;
+
+      if (answersChanged) {
+        setListing((prev) => prev ? ({ ...prev, wizardAnswers: updatedAnswers, disclosures: updatedDisclosures } as Listing) : prev);
+        setLocalAnswers(updatedAnswers);
+      } else {
+        setListing((prev) => prev ? ({ ...prev, disclosures: updatedDisclosures } as Listing) : prev);
+      }
+
       setDisclosuresSaved(true);
       setTimeout(() => setDisclosuresSaved(false), 3000);
     } catch (err: any) {
-      setDisclosuresError(err?.message ?? "Could not save disclosures");
+      setDisclosuresError(err?.message ?? "Could not save interview");
     } finally {
       setDisclosuresSaving(false);
     }
@@ -394,13 +429,11 @@ export function GuidedWorkspace({ listingId }: Props) {
       listing.disclosures &&
       typeof listing.disclosures === "object" &&
       (listing.disclosures as any).answers &&
-      Object.values((listing.disclosures as any).answers).some(Boolean),
+      Object.values((listing.disclosures as any).answers).filter(Boolean).length >= 3,
     ),
   };
 
   const allComplete = Object.values(stepComplete).every(Boolean);
-
-  const disclosureQuestions = disclosures ? packagesForQuestion(disclosures.metadata) : [];
 
   // Research links
   const flAppraisers: Record<string, string> = {
@@ -1070,24 +1103,20 @@ export function GuidedWorkspace({ listingId }: Props) {
             </div>
           )}
 
-          {/* ═══ Step 5: Disclosures ═══ */}
+          {/* ═══ Step 5: Seller Interview ═══ */}
           {activeStep === "disclosures" && disclosures && (
             <div className="space-y-5">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-900">Florida Disclosures</h2>
+                <h2 className="text-lg font-semibold text-zinc-900">Seller Interview</h2>
                 <p className="text-sm text-zinc-500">
-                  Answer seller disclosure questions. These are stored for your records only — not legal advice.
-                  {disclosureQuestions.length > 0 && (
-                    <span className="ml-2 font-medium text-zinc-700">
-                      ({disclosureQuestions.filter((q) => !!disclosures.answers[q.id]).length}/{disclosureQuestions.length} answered)
-                    </span>
-                  )}
+                  Use these questions when interviewing your seller about the property.
+                  When you save, answers with details will auto-fill matching MLS fields.
                 </p>
               </div>
 
-              {/* Metadata */}
+              {/* Seller info */}
               <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                <h3 className="mb-3 text-sm font-semibold text-zinc-800">Property Details</h3>
+                <h3 className="mb-3 text-sm font-semibold text-zinc-800">Seller Info</h3>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div>
                     <label className="block text-xs text-zinc-500">Occupancy</label>
@@ -1133,43 +1162,78 @@ export function GuidedWorkspace({ listingId }: Props) {
                 </div>
               </div>
 
-              {/* Questions */}
-              <div className="space-y-2">
-                {disclosureQuestions.map((q) => {
-                  const current = disclosures.answers[q.id] ?? "";
-                  const unanswered = !current;
-                  return (
-                    <div
-                      key={q.id}
-                      className={`rounded-xl border p-4 ${
-                        unanswered ? "border-amber-200 bg-amber-50" : "border-zinc-200 bg-white"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-zinc-800">{q.label}</p>
-                        {unanswered && (
-                          <span className="text-xs font-medium text-amber-600">Not answered</span>
-                        )}
-                      </div>
-                      {q.helper && <p className="mt-0.5 text-xs text-zinc-500">{q.helper}</p>}
-                      <div className="mt-2 flex gap-4">
-                        {(["yes", "no", "unknown"] as const).map((opt) => (
-                          <label key={opt} className="flex items-center gap-1.5 text-sm text-zinc-700">
-                            <input
-                              type="radio"
-                              name={q.id}
-                              checked={current === opt}
-                              onChange={() => setDisclosures((prev) => prev ? updateDisclosureAnswer(prev, q.id, opt as DisclosureAnswer) : prev)}
-                              className="accent-zinc-900"
-                            />
-                            <span className="capitalize">{opt}</span>
-                          </label>
-                        ))}
-                      </div>
+              {/* Interview questions by category */}
+              {SELLER_INTERVIEW_CATEGORIES.map(({ key, label }) => {
+                const qs = SELLER_INTERVIEW_QUESTIONS.filter((q) => q.category === key);
+                if (qs.length === 0) return null;
+                const answeredInCat = qs.filter((q) => disclosures.answers[q.id]).length;
+                return (
+                  <div key={key} className="rounded-xl border border-zinc-200 bg-white p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-zinc-800">{label}</h3>
+                      <span className="text-xs text-zinc-500">
+                        {answeredInCat}/{qs.length} answered
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="space-y-4">
+                      {qs.map((q) => {
+                        const current = disclosures.answers[q.id] ?? "";
+                        const note = interviewNotes[q.id] ?? "";
+                        const unanswered = !current;
+                        return (
+                          <div
+                            key={q.id}
+                            className={`rounded-lg border p-3 ${
+                              unanswered ? "border-zinc-200 bg-zinc-50" : "border-zinc-200 bg-white"
+                            }`}
+                          >
+                            <p className="text-sm font-medium text-zinc-800">{q.label}</p>
+                            {q.helper && <p className="mt-0.5 text-xs text-zinc-500">{q.helper}</p>}
+
+                            {/* Yes / No / Unknown */}
+                            <div className="mt-2 flex gap-4">
+                              {(["yes", "no", "unknown"] as const).map((opt) => (
+                                <label key={opt} className="flex items-center gap-1.5 text-sm text-zinc-700">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={current === opt}
+                                    onChange={() => setDisclosures((prev) =>
+                                      prev ? updateDisclosureAnswer(prev, q.id, opt as DisclosureAnswer) : prev
+                                    )}
+                                    className="accent-zinc-900"
+                                  />
+                                  <span className="capitalize">{opt}</span>
+                                </label>
+                              ))}
+                            </div>
+
+                            {/* Notes field - always visible but highlighted when answer is "yes" */}
+                            <textarea
+                              rows={2}
+                              value={note}
+                              onChange={(e) => setInterviewNotes((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                              placeholder={current === "yes" ? "Add details — this info can auto-fill your MLS fields" : "Optional notes…"}
+                              className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/20 ${
+                                current === "yes" && !note
+                                  ? "border-amber-300 bg-amber-50 placeholder-amber-400"
+                                  : "border-zinc-200 placeholder-zinc-400"
+                              }`}
+                            />
+
+                            {/* Show which MLS field this feeds */}
+                            {q.feedsField && note && (
+                              <p className="mt-1 text-[11px] text-emerald-600">
+                                → Will update "{q.feedsField.replace(/_/g, " ")}" when you save
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
 
               {disclosuresError && <p className="text-sm text-red-600">{disclosuresError}</p>}
 
@@ -1188,14 +1252,15 @@ export function GuidedWorkspace({ listingId }: Props) {
                     disabled={disclosuresSaving}
                     className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
                   >
-                    {disclosuresSaving ? "Saving…" : "Save disclosures"}
+                    {disclosuresSaving ? "Saving…" : "Save interview"}
                   </button>
-                  {disclosuresSaved && <span className="text-sm text-emerald-600">Saved!</span>}
+                  {disclosuresSaved && <span className="text-sm text-emerald-600">Saved! MLS fields updated.</span>}
                 </div>
               </div>
 
               <p className="text-xs text-zinc-400">
-                ListingLaunchAI does not provide legal advice. Agent and seller must review all disclosures prior to execution.
+                This is for your notes only — not a substitute for your brokerage's formal disclosure forms.
+                ListingLaunchAI does not provide legal advice.
               </p>
             </div>
           )}

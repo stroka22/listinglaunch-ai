@@ -402,6 +402,75 @@ export function deriveSmartWizardDefaultsFromRaw(
     result.hoa_fees_amenities = `${hoaParts.join("; ")} (per public record/association; buyer to verify).`;
   }
 
+  // Electric / gas provider
+  const electricType: string | undefined =
+    utilities.electricType ?? utilities.electricService ?? utilities.electric;
+  if (electricType) {
+    result.electric_provider = electricType;
+  }
+
+  // Bathrooms full / half breakdown
+  const rooms = building.rooms ?? {};
+  const bathsFull = rooms.bathsFull as number | undefined;
+  const bathsHalf = rooms.bathsHalf as number | undefined;
+  if (bathsFull != null || bathsHalf != null) {
+    const parts: string[] = [];
+    if (bathsFull != null) parts.push(`${bathsFull} full`);
+    if (bathsHalf != null) parts.push(`${bathsHalf} half`);
+    result.bathrooms_full_half = parts.join(", ");
+  }
+
+  // Laundry
+  const laundry: string | undefined =
+    interior.laundryType ?? interior.laundry ?? interior.laundryFeatures;
+  if (laundry) {
+    result.laundry_features = laundry;
+  }
+
+  // Windows
+  const windowType: string | undefined =
+    interior.windowType ?? interior.windows ?? interior.windowFeatures;
+  if (windowType) {
+    result.window_features = windowType;
+  }
+
+  // Patio / porch
+  const exterior = building.exterior ?? {};
+  const patioType: string | undefined =
+    exterior.patioType ?? exterior.patio ?? exterior.porchType;
+  if (patioType) {
+    const existingExt = result.exterior_features ?? "";
+    result.exterior_features = existingExt
+      ? `${existingExt}, ${patioType}`
+      : patioType;
+  }
+
+  // Fence
+  const fenceType: string | undefined = lot.fenceType ?? lot.fence;
+  if (fenceType && !/none/i.test(fenceType)) {
+    const existingExt = result.exterior_features ?? "";
+    result.exterior_features = existingExt
+      ? `${existingExt}, Fenced (${fenceType})`
+      : `Fenced (${fenceType})`;
+  }
+
+  // Lot description (richer than just lotType)
+  const lotDesc: string | undefined =
+    lot.lotDescription ?? lot.lotDesc ?? lot.siteDesc;
+  if (lotDesc && !result.lot_features) {
+    result.lot_features = lotDesc;
+  }
+
+  // View
+  const viewDesc: string | undefined =
+    buildingSummary.view ?? summary.view;
+  if (viewDesc && !/none/i.test(viewDesc)) {
+    const existingExt = result.exterior_features ?? "";
+    result.exterior_features = existingExt
+      ? `${existingExt}, ${viewDesc} view`
+      : `${viewDesc} view`;
+  }
+
   // Stories / levels
   const stories: string | number | undefined =
     buildingSummary.levels ?? buildingSummary.stories ?? buildingSummary.storyDesc;

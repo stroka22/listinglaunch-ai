@@ -42,7 +42,14 @@ export async function POST(request: NextRequest) {
         (session.client_reference_id as string | undefined);
       const packageId = session.metadata?.package_id as string | undefined;
 
+      console.log("[stripe-webhook] checkout.session.completed", {
+        agentId,
+        packageId,
+        sessionId: session.id,
+      });
+
       if (!agentId || !packageId) {
+        console.error("[stripe-webhook] Missing agentId or packageId in metadata");
         return new NextResponse("Missing metadata", { status: 200 });
       }
 
@@ -55,6 +62,7 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (existingOrders && existingOrders.length > 0) {
+        console.log("[stripe-webhook] Already processed session", session.id);
         return new NextResponse("Already processed", { status: 200 });
       }
 
@@ -65,8 +73,17 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (pkgError || !pkg) {
-        console.error("Package not found for webhook", pkgError?.message);
+        console.error("[stripe-webhook] Package not found", packageId, pkgError?.message);
         return new NextResponse("Package not found", { status: 200 });
+      }
+
+      // Ensure agent_profiles row exists (credit_orders and ledger reference it)
+      const { error: profileError } = await supabase
+        .from("agent_profiles")
+        .upsert({ id: agentId }, { onConflict: "id", ignoreDuplicates: true });
+
+      if (profileError) {
+        console.error("[stripe-webhook] Could not ensure agent profile", profileError.message);
       }
 
       const { error: orderError } = await supabase.from("credit_orders").insert({
@@ -83,7 +100,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (orderError) {
-        console.error("Error inserting credit_order", orderError.message);
+        console.error("[stripe-webhook] Error inserting credit_order", orderError.message);
       }
 
       const { error: ledgerError } = await supabase
@@ -100,7 +117,7 @@ export async function POST(request: NextRequest) {
         });
 
       if (ledgerError) {
-        console.error("Error inserting agent_credit_ledger", ledgerError.message);
+        console.error("[stripe-webhook] Error inserting agent_credit_ledger", ledgerError.message);
       }
     }
 

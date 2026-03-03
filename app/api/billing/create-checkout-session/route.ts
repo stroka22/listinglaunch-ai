@@ -23,11 +23,13 @@ export async function POST(request: NextRequest) {
       | {
           packageId?: string;
           agentId?: string;
+          promoCode?: string;
         }
       | null;
 
     const packageId = body?.packageId;
     const agentId = body?.agentId;
+    const promoCode = body?.promoCode?.trim() || null;
 
     if (!packageId || !agentId) {
       return NextResponse.json(
@@ -78,7 +80,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // If the agent provided a promo code, look up the Stripe promotion code
+    // and pre-apply it. Otherwise enable Stripe's built-in promo code field.
+    const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
+    let allowPromotionCodes = true;
+
+    if (promoCode) {
+      try {
+        const promoCodes = await stripe.promotionCodes.list({
+          code: promoCode,
+          active: true,
+          limit: 1,
+        });
+        if (promoCodes.data.length > 0) {
+          discounts.push({ promotion_code: promoCodes.data[0].id });
+          allowPromotionCodes = false; // already applied
+        }
+      } catch {
+        // If lookup fails, just let checkout show the promo field
+      }
+    }
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       line_items: [
         {
@@ -94,7 +117,15 @@ export async function POST(request: NextRequest) {
         package_id: pkg.id,
         package_slug: pkg.slug,
       },
-    });
+    };
+
+    if (discounts.length > 0) {
+      sessionParams.discounts = discounts;
+    } else {
+      sessionParams.allow_promotion_codes = allowPromotionCodes;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
       return NextResponse.json(

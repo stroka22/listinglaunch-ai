@@ -22,6 +22,8 @@ export function BillingView({ session }: Props) {
   const [promoStatus, setPromoStatus] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
 
+  const [checkoutPromo, setCheckoutPromo] = useState("");
+
   useEffect(() => {
     loadBilling();
   }, [session.user.id]);
@@ -90,7 +92,7 @@ export function BillingView({ session }: Props) {
         const res = await fetch("/api/billing/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ packageId: pkg.id, agentId: session.user.id }),
+          body: JSON.stringify({ packageId: pkg.id, agentId: session.user.id, promoCode: checkoutPromo.trim() || undefined }),
         });
         const json = (await res.json()) as { url?: string; error?: string };
         if (!res.ok) throw new Error(json?.error || "Checkout failed");
@@ -203,6 +205,21 @@ export function BillingView({ session }: Props) {
       {packages.length > 0 && (
         <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
           <h2 className="mb-3 text-base font-semibold text-zinc-900">Purchase Credits</h2>
+
+          {/* Discount code for checkout */}
+          <div className="mb-4 flex items-center gap-2">
+            <input
+              type="text"
+              value={checkoutPromo}
+              onChange={(e) => setCheckoutPromo(e.target.value)}
+              placeholder="Discount code (optional)"
+              className="w-full max-w-xs rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/30"
+            />
+            {checkoutPromo.trim() && (
+              <span className="text-xs text-emerald-600">Code will be applied at checkout</span>
+            )}
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             {packages.map((pkg) => (
               <div

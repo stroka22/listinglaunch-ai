@@ -54,6 +54,18 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
   const [manualError, setManualError] = useState<string | null>(null);
   const [manualStatus, setManualStatus] = useState<string | null>(null);
 
+  const [newAgentForm, setNewAgentForm] = useState({
+    email: "",
+    password: "",
+    name: "",
+    brokerage: "",
+    phone: "",
+    credits: "0",
+  });
+  const [newAgentLoading, setNewAgentLoading] = useState(false);
+  const [newAgentError, setNewAgentError] = useState<string | null>(null);
+  const [newAgentStatus, setNewAgentStatus] = useState<string | null>(null);
+
   function handlePromoInputChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
@@ -186,8 +198,173 @@ export function AdminControlsClient({ agents, promos }: AdminControlsClientProps
     }
   }
 
+  async function handleCreateAgent(e: FormEvent) {
+    e.preventDefault();
+    const email = newAgentForm.email.trim();
+    const password = newAgentForm.password.trim();
+    if (!email || !password) return;
+
+    setNewAgentError(null);
+    setNewAgentStatus(null);
+    setNewAgentLoading(true);
+    try {
+      const res = await fetch("/api/admin/create-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          name: newAgentForm.name.trim() || undefined,
+          brokerage: newAgentForm.brokerage.trim() || undefined,
+          phone: newAgentForm.phone.trim() || undefined,
+          credits: Number(newAgentForm.credits) || 0,
+        }),
+      });
+
+      const json = (await res.json().catch(() => null)) as
+        | { error?: string; email?: string }
+        | null;
+
+      if (!res.ok) {
+        throw new Error(json?.error || "Failed to create agent.");
+      }
+
+      setNewAgentStatus(`Agent created: ${json?.email ?? email}`);
+      setNewAgentForm({
+        email: "",
+        password: "",
+        name: "",
+        brokerage: "",
+        phone: "",
+        credits: "0",
+      });
+      router.refresh();
+    } catch (err: any) {
+      setNewAgentError(err?.message ?? "Failed to create agent.");
+    } finally {
+      setNewAgentLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <section className="rounded-lg border border-zinc-200 bg-white p-4 text-xs">
+        <div className="mb-3 space-y-0.5">
+          <h2 className="text-sm font-semibold text-zinc-900">Add new agent</h2>
+          <p className="text-[11px] text-zinc-500">
+            Create a login for a new agent and optionally grant starting credits.
+          </p>
+        </div>
+
+        <form onSubmit={handleCreateAgent} className="space-y-2">
+          <div className="grid gap-2 md:grid-cols-2">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-zinc-700">
+                Email *
+              </label>
+              <input
+                type="email"
+                value={newAgentForm.email}
+                onChange={(e) =>
+                  setNewAgentForm((prev) => ({ ...prev, email: e.target.value }))
+                }
+                placeholder="agent@example.com"
+                required
+                className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-zinc-700">
+                Password *
+              </label>
+              <input
+                type="text"
+                value={newAgentForm.password}
+                onChange={(e) =>
+                  setNewAgentForm((prev) => ({ ...prev, password: e.target.value }))
+                }
+                placeholder="Min 6 characters"
+                required
+                className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+              />
+            </div>
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-zinc-700">
+                Name
+              </label>
+              <input
+                type="text"
+                value={newAgentForm.name}
+                onChange={(e) =>
+                  setNewAgentForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                placeholder="Jane Smith"
+                className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-zinc-700">
+                Brokerage
+              </label>
+              <input
+                type="text"
+                value={newAgentForm.brokerage}
+                onChange={(e) =>
+                  setNewAgentForm((prev) => ({ ...prev, brokerage: e.target.value }))
+                }
+                className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-zinc-700">
+                Phone
+              </label>
+              <input
+                type="text"
+                value={newAgentForm.phone}
+                onChange={(e) =>
+                  setNewAgentForm((prev) => ({ ...prev, phone: e.target.value }))
+                }
+                className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+              />
+            </div>
+          </div>
+          <div className="flex items-end gap-3">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-zinc-700">
+                Starting credits
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={newAgentForm.credits}
+                onChange={(e) =>
+                  setNewAgentForm((prev) => ({ ...prev, credits: e.target.value }))
+                }
+                className="w-24 rounded-md border border-zinc-300 px-2 py-1 text-[11px]"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={newAgentLoading || !newAgentForm.email.trim() || !newAgentForm.password.trim()}
+              className="rounded-full bg-black px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
+            >
+              {newAgentLoading ? "Creating…" : "Create agent"}
+            </button>
+          </div>
+        </form>
+        {newAgentStatus && (
+          <div className="mt-2 text-[11px] text-emerald-700">
+            {newAgentStatus}
+          </div>
+        )}
+        {newAgentError && (
+          <div className="mt-2 text-[11px] text-red-700">{newAgentError}</div>
+        )}
+      </section>
+
       <section className="rounded-lg border border-zinc-200 bg-white p-4 text-xs">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
